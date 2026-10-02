@@ -15,3 +15,4 @@ def role_required(*roles):
             return view(*args, **kwargs)
         return wrapped
     return decorator
+

@@ -1,19 +1,83 @@
-{% extends "base.html" %}{% block title %}Manage Menu{% endblock %}
+{% extends "base.html" %}{% block title %}Manage Menu & Stock{% endblock %}
 {% block content %}
-<h3>Manage Menu</h3>
-<form method="post" class="row g-2 card card-body shadow-sm mb-4">{{ csrf() }}
-  <div class="col-md-3"><input name="name" class="form-control" placeholder="Item name" required></div>
-  <div class="col-md-2"><input name="category" class="form-control" placeholder="Category"></div>
-  <div class="col-md-2"><input name="price" type="number" step="0.01" min="0.01" class="form-control" placeholder="Price" required></div>
-  <div class="col-md-2"><input name="stock" type="number" min="0" class="form-control" placeholder="Stock" required></div>
-  <div class="col-md-3"><button class="btn btn-primary w-100">Add item</button></div>
-</form>
-<table class="table align-middle"><thead><tr><th>Item</th><th>Category</th><th>Price</th><th>Stock</th><th>Available</th><th></th></tr></thead><tbody>
-{% for i in items %}<tr>
-<td>{{ i.name }}</td><td>{{ i.category }}</td><td>&#8377;{{ '%.2f'|format(i.price) }}</td>
-<td colspan="3"><form method="post" action="{{ url_for('admin.update_item', item_id=i.id) }}" class="d-flex align-items-center gap-3">{{ csrf() }}
-<input name="stock" type="number" min="0" value="{{ i.stock }}" class="form-control form-control-sm" style="width:90px">
-<label class="form-check-label"><input type="checkbox" name="is_available" class="form-check-input me-1" {{ 'checked' if i.is_available }}>Available</label>
-<button class="btn btn-sm btn-outline-primary">Save</button></form></td></tr>{% endfor %}
-</tbody></table>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+  <div>
+    <h2 class="fw-bold mb-1 text-dark">Manage Menu &amp; Stock</h2>
+    <p class="text-muted mb-0 small">Add new menu items, update inventory stock levels, and toggle availability.</p>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+    <h5 class="fw-bold mb-0">Add New Menu Item</h5>
+  </div>
+  <div class="card-body p-4">
+    <form method="post" class="row g-3">{{ csrf() }}
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold text-secondary">Item Name</label>
+        <input name="name" class="form-control" placeholder="e.g. Veg Cheese Grilled Sandwich" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold text-secondary">Category</label>
+        <input name="category" class="form-control" placeholder="e.g. Snacks">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold text-secondary">Price (&#8377;)</label>
+        <input name="price" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold text-secondary">Initial Stock</label>
+        <input name="stock" type="number" min="0" class="form-control" placeholder="0" required>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-primary w-100 fw-semibold">Add Item</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+    <h5 class="fw-bold mb-0">Existing Menu Inventory</h5>
+  </div>
+  <div class="card-body p-4">
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Item Name</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Stock Count</th>
+            <th>Status</th>
+            <th class="text-end">Save Changes</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for i in items %}
+          <tr>
+            <td class="fw-bold text-dark">{{ i.name }}</td>
+            <td><span class="badge bg-light text-dark border px-2 py-1">{{ i.category }}</span></td>
+            <td class="fw-semibold text-dark">&#8377;{{ '%.2f'|format(i.price) }}</td>
+            <td colspan="3">
+              <form method="post" action="{{ url_for('admin.update_item', item_id=i.id) }}" class="d-flex align-items-center justify-content-end gap-3 mb-0">{{ csrf() }}
+                <input name="stock" type="number" min="0" value="{{ i.stock }}" class="form-control form-control-sm text-center fw-semibold" style="width: 90px;">
+                <div class="form-check form-switch mb-0">
+                  <input type="checkbox" name="is_available" class="form-check-input" id="avail-{{ i.id }}" {{ 'checked' if i.is_available }}>
+                  <label class="form-check-label small fw-semibold text-secondary" for="avail-{{ i.id }}">Available</label>
+                </div>
+                <button class="btn btn-sm btn-outline-primary fw-semibold">Save</button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">No items currently in database.</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 {% endblock %}

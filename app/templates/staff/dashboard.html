@@ -1,53 +1,156 @@
-{% extends "base.html" %}{% block title %}Staff Dashboard{% endblock %}
+{% extends "base.html" %}{% block title %}Kitchen Dashboard{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <div><h3 class="mb-0">🍳 Staff Dashboard</h3><p class="text-muted mb-0 small">Live kitchen view — auto-refreshes every 10s, no reload needed.</p></div>
-  <div class="d-flex gap-2">
-    <span class="live-dot" title="Live polling active"></span><small class="text-muted align-self-center" id="queue-updated">live</small>
-    <form method="post" action="{{ url_for('staff.sweep') }}">{{ csrf() }}<button class="btn btn-sm btn-outline-secondary">Sweep no-shows</button></form>
-    <a class="btn btn-sm btn-dark" href="{{ url_for('staff.queue') }}">Full queue</a>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+  <div>
+    <h2 class="fw-bold mb-1 text-dark">Kitchen Dashboard</h2>
+    <p class="text-muted mb-0 small">Live kitchen status display &mdash; updates in real-time.</p>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <span class="live-dot" title="Live status active"></span>
+    <span class="text-muted small fw-medium" id="queue-updated">Live sync</span>
+    <form method="post" action="{{ url_for('staff.sweep') }}" class="d-inline">{{ csrf() }}
+      <button class="btn btn-sm btn-outline-secondary fw-semibold ms-2">Sweep Stale No-Shows</button>
+    </form>
+    <a class="btn btn-sm btn-dark fw-semibold" href="{{ url_for('staff.queue') }}">Full Queue</a>
   </div>
 </div>
+
 <div class="row g-3 mb-4">
-  <div class="col-6 col-md-3"><div class="card stat-card stat-paid"><div class="card-body"><div class="stat-num" data-count="paid">{{ counts.get('PAID',0) }}</div><div class="stat-label">Paid · to start</div></div></div></div>
-  <div class="col-6 col-md-3"><div class="card stat-card stat-prep"><div class="card-body"><div class="stat-num" data-count="preparing">{{ counts.get('PREPARING',0) }}</div><div class="stat-label">Preparing</div></div></div></div>
-  <div class="col-6 col-md-3"><div class="card stat-card stat-ready"><div class="card-body"><div class="stat-num" data-count="ready">{{ counts.get('READY',0) }}</div><div class="stat-label">Ready for pickup</div></div></div></div>
-  <div class="col-6 col-md-3"><div class="card stat-card stat-noshow"><div class="card-body"><div class="stat-num">{{ no_shows_today }}</div><div class="stat-label">No-shows (24h)</div></div></div></div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card stat-paid shadow-sm border-0">
+      <div class="card-body p-3">
+        <div class="stat-num text-dark" data-count="paid">{{ counts.get('PAID',0) }}</div>
+        <div class="stat-label fw-semibold">Paid &middot; To Prepare</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card stat-prep shadow-sm border-0">
+      <div class="card-body p-3">
+        <div class="stat-num text-primary" data-count="preparing">{{ counts.get('PREPARING',0) }}</div>
+        <div class="stat-label fw-semibold">In Preparation</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card stat-ready shadow-sm border-0">
+      <div class="card-body p-3">
+        <div class="stat-num text-success" data-count="ready">{{ counts.get('READY',0) }}</div>
+        <div class="stat-label fw-semibold">Ready for Pickup</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card stat-noshow shadow-sm border-0">
+      <div class="card-body p-3">
+        <div class="stat-num text-muted">{{ no_shows_today }}</div>
+        <div class="stat-label fw-semibold">No-Shows (24h)</div>
+      </div>
+    </div>
+  </div>
 </div>
+
 <div class="row g-4">
   <div class="col-lg-8">
-    <div class="card shadow-sm"><div class="card-body">
-      <h6>Kitchen queue</h6>
-      <div id="queue-live">
-      <table class="table align-middle mb-0"><thead><tr><th>Token</th><th>Customer</th><th>Items</th><th>Status</th><th></th></tr></thead><tbody>
-      {% for o in orders %}<tr><td class="fw-bold">{{ o.token or ('#%d'|format(o.id)) }}</td>
-        <td>{{ o.user.name }}</td>
-        <td class="small">{% for l in o.items %}{{ l.quantity }}× {{ l.item.name }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
-        <td><span class="badge status-{{ o.status.value }}">{{ o.status.value }}</span></td>
-        <td class="text-end d-flex gap-1 justify-content-end">{% if next_action.get(o.status) %}
-          <form method="post" action="{{ url_for('staff.advance', order_id=o.id) }}">{{ csrf() }}<button class="btn btn-sm btn-primary">Mark {{ next_action[o.status].value }}</button></form>{% endif %}
-          {% if o.status.value == 'READY' %}<form method="post" action="{{ url_for('staff.mark_no_show', order_id=o.id) }}">{{ csrf() }}<input type="hidden" name="from" value="dashboard"><button class="btn btn-sm btn-outline-danger" title="Customer never picked up">No-show</button></form>{% endif %}
-        </td></tr>
-      {% else %}<tr><td colspan="5" class="text-center text-muted">No active orders. 🎉</td></tr>{% endfor %}
-      </tbody></table>
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+        <h5 class="fw-bold mb-0">Active Kitchen Orders</h5>
       </div>
-    </div></div>
+      <div class="card-body p-4">
+        <div id="queue-live" class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Token</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Status</th>
+                <th class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for o in orders %}
+              <tr>
+                <td class="fw-bold text-dark">{{ o.token or ('#%d'|format(o.id)) }}</td>
+                <td class="fw-medium">{{ o.user.name }}</td>
+                <td class="small text-secondary">
+                  {% for l in o.items %}
+                    <span class="fw-semibold">{{ l.quantity }}&times;</span> {{ l.item.name }}{% if not loop.last %}, {% endif %}
+                  {% endfor %}
+                </td>
+                <td><span class="badge status-{{ o.status.value }} px-2 py-1">{{ o.status.value }}</span></td>
+                <td class="text-end">
+                  <div class="d-flex gap-1 justify-content-end">
+                    {% if next_action.get(o.status) %}
+                      <form method="post" action="{{ url_for('staff.advance', order_id=o.id) }}" class="d-inline">
+                        {{ csrf() }}
+                        <button class="btn btn-sm btn-primary fw-semibold">Mark {{ next_action[o.status].value }}</button>
+                      </form>
+                    {% endif %}
+                    {% if o.status.value == 'READY' %}
+                      <form method="post" action="{{ url_for('staff.mark_no_show', order_id=o.id) }}" class="d-inline">
+                        {{ csrf() }}
+                        <input type="hidden" name="from" value="dashboard">
+                        <button class="btn btn-sm btn-outline-danger fw-semibold" title="Customer never picked up">No-Show</button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">No active kitchen orders.</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
+
   <div class="col-lg-4">
-    <div class="card shadow-sm mb-3"><div class="card-body">
-      <h6>Verify pickup token</h6>
-      <form method="post" action="{{ url_for('staff.verify_token') }}" class="d-flex gap-2">{{ csrf() }}
-        <input name="token" class="form-control" placeholder="e.g. T0012" required>
-        <button class="btn btn-dark">Hand over</button></form>
-    </div></div>
-    {% if overdue %}<div class="alert alert-warning"><strong>{{ overdue|length }} overdue pickup(s):</strong> past slot + grace. Sweep or mark no-show.
-      {% for o in overdue %}<div class="small">{{ o.token }} · {{ o.user.name }} · slot {{ o.slot.start_time.strftime('%I:%M %p') }}</div>{% endfor %}</div>{% endif %}
-    <div class="card shadow-sm"><div class="card-body">
-      <h6>⚠️ Low stock (≤5)</h6>
-      {% for i in low_stock %}<div class="d-flex justify-content-between small"><span>{{ i.name }}</span><span class="badge bg-danger">{{ i.stock }}</span></div>
-      {% else %}<div class="text-muted small">All stocked up.</div>{% endfor %}
-      <a href="{{ url_for('admin.menu') }}" class="btn btn-sm btn-outline-primary mt-2">Manage stock</a>
-    </div></div>
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3">Verify Pickup Token</h5>
+        <form method="post" action="{{ url_for('staff.verify_token') }}" class="d-flex gap-2">
+          {{ csrf() }}
+          <input name="token" class="form-control fw-semibold" placeholder="Token e.g. T0012" required>
+          <button class="btn btn-dark fw-semibold text-nowrap">Hand Over</button>
+        </form>
+      </div>
+    </div>
+
+    {% if overdue %}
+      <div class="alert alert-warning border-0 shadow-sm p-4 mb-4">
+        <div class="fw-bold mb-2">{{ overdue|length }} Overdue Pickup(s)</div>
+        <div class="small text-dark mb-2">Orders past pickup slot and grace window:</div>
+        {% for o in overdue %}
+          <div class="small fw-semibold py-1 border-bottom border-warning-subtle d-flex justify-content-between">
+            <span>{{ o.token }} &middot; {{ o.user.name }}</span>
+            <span>Slot: {{ o.slot.start_time.strftime('%I:%M %p') }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Low Stock Alert</h5>
+          <span class="badge bg-danger-subtle text-danger">&le; 5 units</span>
+        </div>
+        {% for i in low_stock %}
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <span class="fw-medium text-dark">{{ i.name }}</span>
+            <span class="badge bg-danger px-2">{{ i.stock }} left</span>
+          </div>
+        {% else %}
+          <div class="text-muted small py-2">All menu items are sufficiently stocked.</div>
+        {% endfor %}
+        <a href="{{ url_for('admin.menu') }}" class="btn btn-sm btn-outline-primary fw-semibold mt-3 w-100">Manage Stock</a>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

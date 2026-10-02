@@ -31,3 +31,12 @@ def test_customer_cannot_open_staff_pages(client):
     login(client)
     assert client.get("/staff/queue").status_code == 403
     assert client.get("/admin/reports").status_code == 403
+
+
+def test_staff_cannot_open_admin_pages(client):
+    login(client, "staff@college.edu")
+    assert client.get("/admin/").status_code == 403
+    assert client.get("/admin/slots").status_code == 403
+    assert client.get("/admin/reports").status_code == 403
+    assert client.get("/staff/queue").status_code == 200
+    assert client.get("/admin/menu").status_code == 200

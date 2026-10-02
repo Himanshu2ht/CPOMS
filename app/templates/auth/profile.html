@@ -1,25 +1,63 @@
 {% extends "base.html" %}{% block title %}My Profile{% endblock %}
 {% block content %}
-<div class="row justify-content-center"><div class="col-lg-7">
-  <h3 class="mb-1">👤 My Profile</h3>
-  <p class="text-muted">How you're authenticated: <strong>{{ current_user.email }}</strong> + scrypt-hashed password, Flask-Login signed session cookie (HttpOnly, SameSite=Lax, strong session protection). Role: <span class="badge bg-dark">{{ current_user.role }}</span> <span class="text-muted small">(roles are assigned by admin, never self-editable)</span></p>
-  <div class="card card-body shadow-sm mb-3">
-    <h6>Update name</h6>
-    <form method="post" class="d-flex gap-2">{{ csrf() }}
-      <input type="hidden" name="action" value="update">
-      <input name="name" class="form-control" value="{{ current_user.name }}" required>
-      <button class="btn btn-primary">Save</button>
-    </form>
+<div class="row justify-content-center py-4">
+  <div class="col-12 col-lg-8">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <div class="bg-primary text-white rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      </div>
+      <div>
+        <h2 class="fw-bold text-dark mb-0">My Profile</h2>
+        <p class="text-muted mb-0 small">Manage your account information and authentication credentials.</p>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3 text-dark">Account Details</h5>
+        <div class="row g-3 mb-2">
+          <div class="col-md-6">
+            <div class="small text-secondary fw-semibold">Email Address</div>
+            <div class="fw-medium text-dark">{{ current_user.email }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="small text-secondary fw-semibold">Role</div>
+            <div><span class="badge bg-dark px-3 py-1 text-uppercase">{{ current_user.role }}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3 text-dark">Update Name</h5>
+        <form method="post">{{ csrf() }}
+          <input type="hidden" name="action" value="update">
+          <div class="d-flex gap-2">
+            <input name="name" class="form-control" value="{{ current_user.name }}" required>
+            <button class="btn btn-primary fw-semibold text-nowrap">Save Name</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3 text-dark">Change Password</h5>
+        <form method="post">{{ csrf() }}
+          <input type="hidden" name="action" value="password">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">Current Password</label>
+            <input name="current_password" type="password" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">New Password (8+ chars, upper + lower + digit + special)</label>
+            <input name="new_password" type="password" class="form-control" required>
+          </div>
+          <button class="btn btn-outline-primary fw-semibold">Update Password</button>
+        </form>
+      </div>
+    </div>
   </div>
-  <div class="card card-body shadow-sm">
-    <h6>Change password</h6>
-    <form method="post">{{ csrf() }}
-      <input type="hidden" name="action" value="password">
-      <div class="mb-2"><label class="form-label">Current password</label><input name="current_password" type="password" class="form-control" required></div>
-      <div class="mb-2"><label class="form-label">New password (8+ chars, upper + lower + digit + special)</label><input name="new_password" type="password" class="form-control" required></div>
-      <button class="btn btn-outline-primary">Change password</button>
-    </form>
-    <div class="form-text mt-2">Logins are rate-limited (5 failed attempts → 5 min lockout per IP+email). Sessions expire on browser close.</div>
-  </div>
-</div></div>
+</div>
 {% endblock %}

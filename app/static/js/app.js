@@ -31,7 +31,7 @@ function pollOrderStatus(orderId) {
       const d = await r.json();
       const pretty = d.status.replace(/_/g, " ");
       badge.textContent = pretty;
-      badge.className = `badge fs-6 status-${d.status}`;
+      badge.className = `badge fs-6 status-${d.status} px-3 py-2`;
       document.querySelectorAll(".timeline .step").forEach(s => {
         const seq = ["PAID", "PREPARING", "READY", "COLLECTED"];
         const idx = seq.indexOf(d.status);
@@ -63,12 +63,13 @@ function pollQueueJSON() {
       if (wrap && wrap.querySelector("tbody")) {
         const tb = wrap.querySelector("tbody");
         tb.innerHTML = rows.length ? rows.map(o => `<tr>
-          <td class="fw-bold">${o.token || "#" + o.id}</td>
-          <td>${o.customer}${o.overdue ? ' <span class="badge bg-warning text-dark">overdue</span>' : ""}</td>
+          <td class="fw-bold text-dark">${o.token || "#" + o.id}</td>
+          <td class="fw-medium">${o.customer}${o.overdue ? ' <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1">overdue</span>' : ""}</td>
+          <td class="small text-secondary">${o.slot ? new Date(o.slot).toLocaleString([], {hour: "numeric", minute: "2-digit"}) : ""}</td>
           <td class="small">${o.items.join(", ")}</td>
-          <td><span class="badge status-${o.status}">${o.status}</span></td>
-          <td class="text-end small text-muted">${o.slot ? new Date(o.slot).toLocaleString([], {hour: "numeric", minute: "2-digit"}) : ""}</td>
-        </tr>`).join("") : `<tr><td colspan="5" class="text-center text-muted">No active orders. 🎉</td></tr>`;
+          <td><span class="badge status-${o.status} px-2 py-1">${o.status}</span></td>
+          <td class="text-end"></td>
+        </tr>`).join("") : `<tr><td colspan="6" class="text-center text-muted py-4">No active orders.</td></tr>`;
       }
       if (updated) updated.textContent = `live · ${rows.length} active · ${new Date().toLocaleTimeString()}`;
     } catch (e) { /* ignore transient errors */ }
