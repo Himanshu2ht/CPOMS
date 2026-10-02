@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}Time Slots{% endblock %}
+{% block content %}
+<h3>Pickup Time Slots</h3>
+<form method="post" class="row g-2 card card-body shadow-sm mb-4">{{ csrf() }}
+  <div class="col-md-5"><input name="start_time" type="datetime-local" class="form-control" required></div>
+  <div class="col-md-4"><input name="capacity" type="number" min="1" class="form-control" placeholder="Max orders in slot" required></div>
+  <div class="col-md-3"><button class="btn btn-primary w-100">Create slot</button></div>
+</form>
+<table class="table"><thead><tr><th>Start</th><th>Capacity</th><th>Booked</th></tr></thead><tbody>
+{% for s in slots %}<tr><td>{{ s.start_time.strftime('%d %b %Y, %I:%M %p') }}</td><td>{{ s.capacity }}</td><td>{{ s.booked }}</td></tr>{% endfor %}
+</tbody></table>
+{% endblock %}
