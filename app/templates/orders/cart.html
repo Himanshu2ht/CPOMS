@@ -1,20 +1,74 @@
-{% extends "base.html" %}{% block title %}Cart{% endblock %}
+{% extends "base.html" %}{% block title %}Your Cart{% endblock %}
 {% block content %}
-<h3>Your Cart</h3>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+  <div>
+    <h2 class="fw-bold mb-1 text-dark">Your Order Cart</h2>
+    <p class="text-muted mb-0 small">Review selected menu items and select a pickup time slot.</p>
+  </div>
+</div>
+
 {% if lines %}
-<table class="table align-middle"><thead><tr><th>Item</th><th>Qty</th><th class="text-end">Subtotal</th><th></th></tr></thead><tbody>
-{% for l in lines %}<tr><td>{{ l.item.name }}</td><td>{{ l.qty }}</td><td class="text-end">&#8377;{{ '%.2f'|format(l.subtotal) }}</td>
-<td class="text-end"><form method="post" action="{{ url_for('orders.cart_remove', item_id=l.item.id) }}">{{ csrf() }}<button class="btn btn-sm btn-outline-danger">Remove</button></form></td></tr>{% endfor %}
-</tbody><tfoot><tr><th colspan="2">Total</th><th class="text-end">&#8377;{{ '%.2f'|format(total) }}</th><th></th></tr></tfoot></table>
-<form method="post" action="{{ url_for('orders.checkout') }}" class="card card-body shadow-sm">{{ csrf() }}
-  <label class="form-label fw-semibold">Choose pickup slot <span class="badge bg-info text-dark">kitchen needs {{ prep_minutes }} min prep</span></label>
-  <select name="slot_id" class="form-select mb-2" required>
-    <option value="">Select a slot...</option>
-    {% for s in slots %}<option value="{{ s.id }}" {{ 'disabled' if s.remaining == 0 }}>{{ s.start_time.strftime('%d %b, %I:%M %p') }} &mdash; {{ s.remaining }} spots left</option>{% endfor %}
-  </select>
-  <div class="form-text mb-3">Only slots ≥ {{ prep_minutes }} min away are shown. Free cancel within 5 min of ordering; miss your slot + grace and the order becomes NO_SHOW (no refund).</div>
-  <button class="btn btn-success">Pay online &amp; confirm order</button>
-  <div class="form-text">Orders are confirmed only after successful online payment.</div>
-</form>
-{% else %}<div class="alert alert-info">Your cart is empty. <a href="{{ url_for('menu.index') }}">Browse the menu</a>.</div>{% endif %}
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Item</th>
+              <th>Quantity</th>
+              <th class="text-end">Subtotal</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for l in lines %}
+            <tr>
+              <td class="fw-bold text-dark">{{ l.item.name }}</td>
+              <td class="fw-semibold">{{ l.qty }}</td>
+              <td class="text-end fw-semibold">&#8377;{{ '%.2f'|format(l.subtotal) }}</td>
+              <td class="text-end">
+                <form method="post" action="{{ url_for('orders.cart_remove', item_id=l.item.id) }}" class="d-inline">{{ csrf() }}
+                  <button class="btn btn-sm btn-outline-danger fw-semibold">Remove</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr class="table-light">
+              <th colspan="2" class="fs-6 fw-bold">Total Payable Amount</th>
+              <th class="text-end fs-5 fw-bold text-primary">&#8377;{{ '%.2f'|format(total) }}</th>
+              <th></th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('orders.checkout') }}" class="card shadow-sm border-0">
+    <div class="card-body p-4">{{ csrf() }}
+      <h5 class="fw-bold mb-3 text-dark">Select Pickup Slot</h5>
+      <div class="mb-3">
+        <label class="form-label fw-semibold text-secondary">Pickup Time Interval <span class="badge bg-info-subtle text-info-emphasis ms-2">Kitchen requires {{ prep_minutes }}-min prep</span></label>
+        <select name="slot_id" class="form-select form-select-lg fs-6" required>
+          <option value="">Choose a slot...</option>
+          {% for s in slots %}
+            <option value="{{ s.id }}" {{ 'disabled' if s.remaining == 0 }}>{{ s.start_time.strftime('%d %b, %I:%M %p') }} &mdash; {{ s.remaining }} spots remaining</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-text text-muted mb-4">Pickup slots must be at least {{ prep_minutes }} minutes from order time. Free cancellations are allowed within 5 minutes of placing your order.</div>
+      <button class="btn btn-success btn-lg w-100 fw-semibold fs-6 py-2">Pay Online &amp; Confirm Order</button>
+    </div>
+  </form>
+{% else %}
+  <div class="card p-5 text-center shadow-sm border-0 my-4">
+    <h5 class="fw-bold text-dark mb-2">Your Cart is Empty</h5>
+    <p class="text-muted mb-4">Add delicious items from today's menu to place your pre-order.</p>
+    <div>
+      <a href="{{ url_for('menu.index') }}" class="btn btn-primary fw-semibold px-4">Browse Menu</a>
+    </div>
+  </div>
+{% endif %}
 {% endblock %}

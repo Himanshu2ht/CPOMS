@@ -1,11 +1,38 @@
-{% extends "base.html" %}{% block title %}Register{% endblock %}
+{% extends "base.html" %}{% block title %}Register Account{% endblock %}
 {% block content %}
-<div class="row justify-content-center"><div class="col-md-5"><div class="card shadow-sm"><div class="card-body p-4">
-<h4 class="mb-3">Create account</h4>
-<form method="post">{{ csrf() }}
-  <div class="mb-3"><label class="form-label">Full name</label><input name="name" class="form-control" required></div>
-  <div class="mb-3"><label class="form-label">College email</label><input name="email" type="email" class="form-control" required></div>
-  <div class="mb-3"><label class="form-label">Password (min 8 chars)</label><input name="password" type="password" minlength="8" class="form-control" required></div>
-  <button class="btn btn-primary w-100">Register</button>
-</form></div></div></div></div>
+<div class="row justify-content-center py-4">
+  <div class="col-12 col-md-6 col-lg-5">
+    <div class="card shadow border-0 rounded-4">
+      <div class="card-body p-4 p-md-5">
+        <div class="text-center mb-4">
+          <div class="d-inline-flex align-items-center justify-content-center bg-warning-subtle text-warning-emphasis rounded-circle p-3 mb-3" style="width: 56px; height: 56px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="17" y1="11" x2="23" y2="11"></line></svg>
+          </div>
+          <h3 class="fw-bold text-dark mb-1">Create Account</h3>
+          <p class="text-muted small">Register to pre-order food and bypass pickup queues.</p>
+        </div>
+
+        <form method="post">{{ csrf() }}
+          <div class="mb-3">
+            <label class="form-label fw-semibold text-secondary small">Full Name</label>
+            <input name="name" class="form-control form-control-lg fs-6" placeholder="John Doe" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold text-secondary small">College Email</label>
+            <input name="email" type="email" class="form-control form-control-lg fs-6" placeholder="name@college.edu" required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold text-secondary small">Password (Min 8 characters)</label>
+            <input name="password" type="password" minlength="8" class="form-control form-control-lg fs-6" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" required>
+          </div>
+          <button class="btn btn-primary btn-lg w-100 fw-semibold fs-6 py-2">Register</button>
+        </form>
+
+        <div class="text-center mt-4 pt-3 border-top">
+          <p class="mb-0 small text-muted">Already registered? <a href="{{ url_for('auth.login') }}" class="fw-semibold text-primary text-decoration-none">Sign in here</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

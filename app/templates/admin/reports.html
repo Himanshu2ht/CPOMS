@@ -1,17 +1,110 @@
-{% extends "base.html" %}{% block title %}Reports{% endblock %}
+{% extends "base.html" %}{% block title %}Sales Reports{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2"><h3>Sales Reports</h3>
-<div class="d-flex gap-2"><form method="post" action="{{ url_for('admin.expire_unpaid') }}">{{ csrf() }}<button class="btn btn-sm btn-outline-secondary">Expire unpaid orders</button></form>
-<form method="post" action="{{ url_for('admin.sweep_no_shows') }}">{{ csrf() }}<button class="btn btn-sm btn-outline-danger">Sweep no-shows</button></form></div></div>
-<div class="row g-4 mt-1"><div class="col-md-7"><h6>Daily sales (paid orders)</h6>
-<table class="table"><thead><tr><th>Date</th><th>Orders</th><th class="text-end">Revenue</th></tr></thead><tbody>
-{% for r in sales %}<tr><td>{{ r.day }}</td><td>{{ r.orders }}</td><td class="text-end">&#8377;{{ '%.2f'|format(r.revenue) }}</td></tr>
-{% else %}<tr><td colspan="3" class="text-muted">No data yet.</td></tr>{% endfor %}</tbody></table></div>
-<div class="col-md-5"><h6>Top items</h6><ol class="list-group list-group-numbered">
-{% for t in top %}<li class="list-group-item d-flex justify-content-between"><span>{{ t.name }}</span><span class="badge bg-primary">{{ t.qty }}</span></li>
-{% else %}<li class="list-group-item text-muted">No data yet.</li>{% endfor %}</ol></div></div>
-<h6 class="mt-4">🗑️ No-show / waste log (READY but never picked up — no refund)</h6>
-<table class="table"><thead><tr><th>#</th><th>Customer</th><th>Slot</th><th>Total</th><th>When</th></tr></thead><tbody>
-{% for o in no_shows %}<tr><td>{{ o.id }}</td><td>{{ o.user.name }}</td><td>{{ o.slot.start_time.strftime('%d %b, %I:%M %p') if o.slot }}</td><td>&#8377;{{ '%.2f'|format(o.total) }}</td><td class="small">{{ o.created_at }}</td></tr>
-{% else %}<tr><td colspan="5" class="text-muted">No no-shows. 🎉</td></tr>{% endfor %}</tbody></table>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+  <div>
+    <h2 class="fw-bold mb-1 text-dark">Sales &amp; Analytics Reports</h2>
+    <p class="text-muted mb-0 small">Daily revenue trends, top items, and waste logs.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <form method="post" action="{{ url_for('admin.expire_unpaid') }}" class="d-inline">{{ csrf() }}
+      <button class="btn btn-sm btn-outline-secondary fw-semibold">Expire Unpaid Orders</button>
+    </form>
+    <form method="post" action="{{ url_for('admin.sweep_no_shows') }}" class="d-inline">{{ csrf() }}
+      <button class="btn btn-sm btn-outline-danger fw-semibold">Sweep No-Shows</button>
+    </form>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-7">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+        <h5 class="fw-bold mb-0">Daily Sales Summary (Paid Orders)</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Date</th>
+                <th>Paid Orders</th>
+                <th class="text-end">Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for r in sales %}
+              <tr>
+                <td class="fw-medium text-dark">{{ r.day }}</td>
+                <td><span class="badge bg-light text-dark border px-2 py-1">{{ r.orders }}</span></td>
+                <td class="text-end fw-bold text-success">&#8377;{{ '%.2f'|format(r.revenue) }}</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="3" class="text-muted py-4 text-center">No sales data recorded yet.</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-5">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+        <h5 class="fw-bold mb-0">Top Performing Items</h5>
+      </div>
+      <div class="card-body p-4">
+        <ol class="list-group list-group-numbered list-group-flush">
+        {% for t in top %}
+          <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-0">
+            <span class="fw-medium text-dark">{{ t.name }}</span>
+            <span class="badge bg-primary px-3 py-1 fw-semibold">{{ t.qty }} units</span>
+          </li>
+        {% else %}
+          <li class="list-group-item text-muted px-0 py-4 text-center">No sales analytics available yet.</li>
+        {% endfor %}
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+    <h5 class="fw-bold mb-0">No-Show &amp; Waste Log</h5>
+    <p class="text-muted small mb-0">Orders marked READY but never collected during slot window (Non-refundable).</p>
+  </div>
+  <div class="card-body p-4">
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Pickup Slot</th>
+            <th>Total Amount</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for o in no_shows %}
+          <tr>
+            <td class="fw-bold text-dark">#{{ o.id }}</td>
+            <td class="fw-medium">{{ o.user.name }}</td>
+            <td class="small text-secondary">{{ o.slot.start_time.strftime('%d %b, %I:%M %p') if o.slot }}</td>
+            <td class="fw-semibold text-dark">&#8377;{{ '%.2f'|format(o.total) }}</td>
+            <td class="small text-muted">{{ o.created_at }}</td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="5" class="text-center text-muted py-4">No logged no-shows.</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 {% endblock %}

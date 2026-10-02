@@ -1,12 +1,68 @@
-{% extends "base.html" %}{% block title %}Time Slots{% endblock %}
+{% extends "base.html" %}{% block title %}Pickup Time Slots{% endblock %}
 {% block content %}
-<h3>Pickup Time Slots</h3>
-<form method="post" class="row g-2 card card-body shadow-sm mb-4">{{ csrf() }}
-  <div class="col-md-5"><input name="start_time" type="datetime-local" class="form-control" required></div>
-  <div class="col-md-4"><input name="capacity" type="number" min="1" class="form-control" placeholder="Max orders in slot" required></div>
-  <div class="col-md-3"><button class="btn btn-primary w-100">Create slot</button></div>
-</form>
-<table class="table"><thead><tr><th>Start</th><th>Capacity</th><th>Booked</th></tr></thead><tbody>
-{% for s in slots %}<tr><td>{{ s.start_time.strftime('%d %b %Y, %I:%M %p') }}</td><td>{{ s.capacity }}</td><td>{{ s.booked }}</td></tr>{% endfor %}
-</tbody></table>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+  <div>
+    <h2 class="fw-bold mb-1 text-dark">Pickup Time Slots</h2>
+    <p class="text-muted mb-0 small">Create pickup intervals and monitor slot capacity limits.</p>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+    <h5 class="fw-bold mb-0">Create Pickup Time Slot</h5>
+  </div>
+  <div class="card-body p-4">
+    <form method="post" class="row g-3">{{ csrf() }}
+      <div class="col-md-5">
+        <label class="form-label small fw-semibold text-secondary">Start Time</label>
+        <input name="start_time" type="datetime-local" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold text-secondary">Slot Capacity (Max Orders)</label>
+        <input name="capacity" type="number" min="1" class="form-control" placeholder="Capacity count" required>
+      </div>
+      <div class="col-md-3 d-flex align-items-end">
+        <button class="btn btn-primary w-100 fw-semibold">Create Slot</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+    <h5 class="fw-bold mb-0">Configured Pickup Slots</h5>
+  </div>
+  <div class="card-body p-4">
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Slot Start Time</th>
+            <th>Max Capacity</th>
+            <th>Booked Orders</th>
+            <th>Capacity Progress</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for s in slots %}
+          <tr>
+            <td class="fw-bold text-dark">{{ s.start_time.strftime('%d %b %Y, %I:%M %p') }}</td>
+            <td class="fw-semibold text-secondary">{{ s.capacity }}</td>
+            <td><span class="badge bg-primary px-3 py-1">{{ s.booked }} booked</span></td>
+            <td>
+              <div class="progress" style="height: 8px; max-width: 200px;">
+                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (s.booked / s.capacity * 100) if s.capacity else 0 }}%;" aria-valuenow="{{ s.booked }}" aria-valuemin="0" aria-valuemax="{{ s.capacity }}"></div>
+              </div>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="4" class="text-center text-muted py-4">No pickup time slots configured yet.</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 {% endblock %}
