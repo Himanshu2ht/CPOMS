@@ -63,6 +63,7 @@ and `DB_FALLBACK_SQLITE=1`, the app falls back to `instance/canteen.db` instead 
 `app/gateway.py` is a sandbox adapter (HMAC-signed webhook, hosted-checkout style page).
 Swap `create_payment()` for the real gateway SDK (e.g. Razorpay) to go live.
 Orders are confirmed only after a successful payment event; stock is reduced then.
+<<<<<<< HEAD
 
 ## Git (reversing mistakes)
 ```bash
@@ -71,3 +72,7 @@ git diff HEAD~1            # see what the last change did
 git revert <commit>        # undo a bad change safely (keeps history)
 git reset --hard HEAD~1    # ⚠️ throw away last commit (use only locally)
 ```
+
+
+....
+
