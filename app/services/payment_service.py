@@ -42,9 +42,11 @@ def handle_event(ref, success):
 
 
 def refund(order):
-    """Full refund for a PAID order cancelled before preparation."""
+    """Full refund for a PAID order cancelled before preparation (within 5-min window)."""
     if order.status != OrderStatus.PAID:
         return fail("NOT_REFUNDABLE")
+    if not order.can_cancel():  # double-guard the 5-minute window
+        return fail("CANCEL_WINDOW_OVER")
     order.payment.status = PaymentStatus.REFUNDED   # real gateway refund call goes here
     order.status = OrderStatus.CANCELLED
     for line in order.items:

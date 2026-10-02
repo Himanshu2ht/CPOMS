@@ -1,7 +1,8 @@
 from decimal import Decimal
+from datetime import timedelta
 
-from flask import (Blueprint, abort, flash, redirect, render_template, request,
-                   session, url_for)
+from flask import (Blueprint, abort, current_app, flash, jsonify, redirect,
+                   render_template, request, session, url_for)
 from flask_login import current_user, login_required
 
 from app.extensions import db
@@ -15,15 +16,24 @@ ERRORS = {
     "EMPTY_CART": "Your cart is empty.",
     "INVALID_SLOT": "Please choose a valid pickup slot.",
     "SLOT_FULL": "That slot is full. Pick another one.",
+    "SLOT_TOO_SOON": "Kitchen needs 25 min prep — please pick a later slot.",
     "ITEM_UNAVAILABLE": "An item in your cart is unavailable or out of stock.",
     "GATEWAY_ERROR": "Payment service is unavailable. Please try again.",
     "NOT_FOUND": "Order not found.",
     "NOT_CANCELLABLE": "This order can no longer be cancelled.",
+    "CANCEL_WINDOW_OVER": "The 5-minute free-cancel window has passed; the kitchen has started.",
 }
 
 
 def _cart():
     return session.setdefault("cart", {})
+
+
+def _orderable_slots():
+    """Only slots with enough lead time for the 25-min prep rule."""
+    cutoff = utcnow() + timedelta(minutes=current_app.config.get("PREP_TIME_MINUTES", 25))
+    return (TimeSlot.query.filter(TimeSlot.start_time > cutoff)
+            .order_by(TimeSlot.start_time).all())
 
 
 @bp.post("/cart/add/<int:item_id>")
@@ -56,9 +66,9 @@ def cart():
             subtotal = item.price * qty
             lines.append({"item": item, "qty": qty, "subtotal": subtotal})
             total += subtotal
-    slots = (TimeSlot.query.filter(TimeSlot.start_time > utcnow())
-             .order_by(TimeSlot.start_time).all())
-    return render_template("orders/cart.html", lines=lines, total=total, slots=slots)
+    slots = _orderable_slots()
+    return render_template("orders/cart.html", lines=lines, total=total, slots=slots,
+                           prep_minutes=current_app.config.get("PREP_TIME_MINUTES", 25))
 
 
 @bp.post("/checkout")
@@ -88,7 +98,20 @@ def detail(order_id):
     order = db.session.get(Order, order_id)
     if order is None or order.user_id != current_user.id:
         abort(404)
-    return render_template("orders/detail.html", order=order)
+    cancel_window = current_app.config.get("CANCEL_WINDOW_MINUTES", 5)
+    return render_template("orders/detail.html", order=order, cancel_window=cancel_window)
+
+
+@bp.get("/orders/<int:order_id>/status")
+@login_required
+def status_json(order_id):
+    """Real-time polling endpoint for the tracking page (no full reload)."""
+    order = db.session.get(Order, order_id)
+    if order is None or order.user_id != current_user.id:
+        abort(404)
+    return jsonify(id=order.id, status=order.status.value,
+                   token=order.token, total=float(order.total),
+                   can_cancel=order.can_cancel(current_app.config.get("CANCEL_WINDOW_MINUTES", 5)))
 
 
 @bp.post("/orders/<int:order_id>/cancel")

@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% block title %}My Profile{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-7">
+  <h3 class="mb-1">👤 My Profile</h3>
+  <p class="text-muted">How you're authenticated: <strong>{{ current_user.email }}</strong> + scrypt-hashed password, Flask-Login signed session cookie (HttpOnly, SameSite=Lax, strong session protection). Role: <span class="badge bg-dark">{{ current_user.role }}</span> <span class="text-muted small">(roles are assigned by admin, never self-editable)</span></p>
+  <div class="card card-body shadow-sm mb-3">
+    <h6>Update name</h6>
+    <form method="post" class="d-flex gap-2">{{ csrf() }}
+      <input type="hidden" name="action" value="update">
+      <input name="name" class="form-control" value="{{ current_user.name }}" required>
+      <button class="btn btn-primary">Save</button>
+    </form>
+  </div>
+  <div class="card card-body shadow-sm">
+    <h6>Change password</h6>
+    <form method="post">{{ csrf() }}
+      <input type="hidden" name="action" value="password">
+      <div class="mb-2"><label class="form-label">Current password</label><input name="current_password" type="password" class="form-control" required></div>
+      <div class="mb-2"><label class="form-label">New password (8+ chars, upper + lower + digit + special)</label><input name="new_password" type="password" class="form-control" required></div>
+      <button class="btn btn-outline-primary">Change password</button>
+    </form>
+    <div class="form-text mt-2">Logins are rate-limited (5 failed attempts → 5 min lockout per IP+email). Sessions expire on browser close.</div>
+  </div>
+</div></div>
+{% endblock %}

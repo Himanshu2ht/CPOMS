@@ -7,11 +7,12 @@
 <td class="text-end"><form method="post" action="{{ url_for('orders.cart_remove', item_id=l.item.id) }}">{{ csrf() }}<button class="btn btn-sm btn-outline-danger">Remove</button></form></td></tr>{% endfor %}
 </tbody><tfoot><tr><th colspan="2">Total</th><th class="text-end">&#8377;{{ '%.2f'|format(total) }}</th><th></th></tr></tfoot></table>
 <form method="post" action="{{ url_for('orders.checkout') }}" class="card card-body shadow-sm">{{ csrf() }}
-  <label class="form-label fw-semibold">Choose pickup slot</label>
-  <select name="slot_id" class="form-select mb-3" required>
+  <label class="form-label fw-semibold">Choose pickup slot <span class="badge bg-info text-dark">kitchen needs {{ prep_minutes }} min prep</span></label>
+  <select name="slot_id" class="form-select mb-2" required>
     <option value="">Select a slot...</option>
     {% for s in slots %}<option value="{{ s.id }}" {{ 'disabled' if s.remaining == 0 }}>{{ s.start_time.strftime('%d %b, %I:%M %p') }} &mdash; {{ s.remaining }} spots left</option>{% endfor %}
   </select>
+  <div class="form-text mb-3">Only slots ≥ {{ prep_minutes }} min away are shown. Free cancel within 5 min of ordering; miss your slot + grace and the order becomes NO_SHOW (no refund).</div>
   <button class="btn btn-success">Pay online &amp; confirm order</button>
   <div class="form-text">Orders are confirmed only after successful online payment.</div>
 </form>

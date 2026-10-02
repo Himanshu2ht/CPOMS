@@ -1,20 +1,62 @@
 """Application factory."""
-from flask import Flask, render_template
+import logging
+
+from flask import Flask, jsonify, render_template
 
 from config import Config
 
-from .extensions import csrf, db, login_manager
+
+def _resolve_db_uri(app):
+    """Use MySQL when reachable, else fall back to a local SQLite file.
+
+    This fixes 'no real database connectivity': production uses MySQL
+    (DATABASE_URL), but developers without MySQL still get a working app
+    instead of a crash on startup. /health/db always reports which one.
+    """
+    uri = app.config["SQLALCHEMY_DATABASE_URI"]
+    if not app.config.get("DB_FALLBACK_SQLITE", True) or not uri.startswith("mysql"):
+        return uri
+    try:
+        import pymysql
+
+        # Parse mysql+pymysql://user:pw@host:port/db
+        from sqlalchemy.engine.url import make_url
+
+        url = make_url(uri)
+        conn = pymysql.connect(host=url.host or "localhost", port=url.port or 3306,
+                               user=url.username, password=url.password,
+                               database=url.database, connect_timeout=2)
+        conn.close()
+        return uri
+    except Exception as exc:  # noqa: BLE001 - fallback is intentional
+        logging.getLogger(__name__).warning("MySQL unreachable (%s); using SQLite fallback.", exc)
+        import os
+
+        os.makedirs(os.path.join(app.root_path, "..", "instance"), exist_ok=True)
+        return "sqlite:///" + os.path.abspath(
+            os.path.join(app.root_path, "..", "instance", "canteen.db")
+        )
 
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    from .extensions import csrf, db, login_manager
+
     db.init_app(app)
     csrf.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
     login_manager.login_message_category = "warning"
+    # Strong session protection: mismatched IP/user-agent invalidates the session.
+    login_manager.session_protection = "strong"
+
+    # Resolve DB (MySQL preferred, SQLite fallback) before first use.
+    app.config["SQLALCHEMY_DATABASE_URI"] = _resolve_db_uri(app)
+    app.config["DB_BACKEND"] = (
+        "mysql" if app.config["SQLALCHEMY_DATABASE_URI"].startswith("mysql") else "sqlite"
+    )
 
     from .models import User
 
@@ -26,6 +68,17 @@ def create_app(config_class=Config):
 
     for module in (auth, menu, orders, payments, staff, admin):
         app.register_blueprint(module.bp)
+
+    @app.get("/health/db")
+    def db_health():
+        """Real database connectivity probe (used by docker/k8s and the admin dashboard)."""
+        from sqlalchemy import text
+
+        try:
+            db.session.execute(text("SELECT 1"))
+            return jsonify(ok=True, backend=app.config.get("DB_BACKEND", "unknown"))
+        except Exception as exc:  # noqa: BLE001
+            return jsonify(ok=False, error=str(exc)[:200]), 500
 
     @app.context_processor
     def inject_csrf():
