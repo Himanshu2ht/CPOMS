@@ -1,6 +1,8 @@
 // Client helpers: alerts, double-submit guard, live polling (real-time updates).
 document.addEventListener("DOMContentLoaded", () => {
+  // auto-dismiss flash alerts, but NEVER countdown banners (role=timer / data-keep).
   setTimeout(() => document.querySelectorAll(".alert").forEach(a => {
+    if (a.hasAttribute("data-keep") || a.querySelector("[data-countdown-to]")) return;
     if (window.bootstrap) bootstrap.Alert.getOrCreateInstance(a).close();
   }), 6000);
   document.querySelectorAll("form").forEach(f => f.addEventListener("submit", () => {
@@ -17,7 +19,28 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   }
-  // live countdowns: any [data-countdown-to="<ISO>"] ticks every second.
+  // "＋ add category": reveal the inline input next to the dropdown.
+  document.querySelectorAll("[data-add-category]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const scope = btn.closest("[data-category-form]") || btn.closest("tr") || document;
+      const input = scope.querySelector("[data-new-category]");
+      if (input) { input.classList.toggle("d-none"); input.focus(); }
+    });
+  });
+  // On submit, a filled new-category input becomes the selected option.
+  document.addEventListener("submit", (e) => {
+    const form = e.target;
+    const scope = form.hasAttribute("data-category-form") ? form
+      : (form.closest("[data-category-form]") || (form.id && form.id.startsWith("edit-") ? form.closest("tr") : null));
+    if (!scope) return;
+    const sel = scope.querySelector("[data-category-select]");
+    const ni = scope.querySelector("[data-new-category]");
+    if (sel && ni && ni.value.trim()) {
+      const v = ni.value.trim();
+      if (![...sel.options].some(o => o.value === v)) sel.add(new Option(v, v));
+      sel.value = v;
+    }
+  });
   // "Slot starts in 12:34" -> "Slot started — mark READY / pickup now".
   // With data-grace-minutes (READY orders) it counts the pickup window instead.
   const fmt = (ms) => {
