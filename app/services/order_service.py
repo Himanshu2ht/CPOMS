@@ -36,9 +36,9 @@ def _cancel_window():
 
 def _grace_minutes():
     try:
-        return int(current_app.config.get("PICKUP_GRACE_MINUTES", 60))
+        return int(current_app.config.get("PICKUP_GRACE_MINUTES", 15))
     except RuntimeError:
-        return 60
+        return 15
 
 
 def is_orderable(item, qty):

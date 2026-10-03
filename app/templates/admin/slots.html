@@ -41,6 +41,7 @@
             <th>Max Capacity</th>
             <th>Booked Orders</th>
             <th>Capacity Progress</th>
+            <th class="text-end">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -54,10 +55,15 @@
                 <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (s.booked / s.capacity * 100) if s.capacity else 0 }}%;" aria-valuenow="{{ s.booked }}" aria-valuemin="0" aria-valuemax="{{ s.capacity }}"></div>
               </div>
             </td>
+            <td class="text-end">
+              <form method="post" action="{{ url_for('admin.delete_slot', slot_id=s.id) }}" class="d-inline" onsubmit="return confirm('Delete this slot?')">{{ csrf() }}
+                <button class="btn btn-sm btn-outline-danger fw-semibold">Delete</button>
+              </form>
+            </td>
           </tr>
         {% else %}
           <tr>
-            <td colspan="4" class="text-center text-muted py-4">No pickup time slots configured yet.</td>
+            <td colspan="5" class="text-center text-muted py-4">No pickup time slots configured yet.</td>
           </tr>
         {% endfor %}
         </tbody>

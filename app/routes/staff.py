@@ -30,7 +30,7 @@ def dashboard():
     orders = _queue_orders()
     counts = {s.value: sum(1 for o in orders if o.status == s) for s in ACTIVE}
     overdue = [o for o in orders if o.is_pickup_overdue(
-        current_app.config.get("PICKUP_GRACE_MINUTES", 60))]
+        current_app.config.get("PICKUP_GRACE_MINUTES", 15))]
     low_stock = (MenuItem.query.filter(MenuItem.stock <= 5)
                  .order_by(MenuItem.stock).limit(10).all())
     no_shows_today = Order.query.filter(
@@ -58,7 +58,7 @@ def queue_data():
         "slot": o.slot.start_time.isoformat() if o.slot else None,
         "items": [f"{l.quantity}x {l.item.name}" for l in o.items],
         "status": o.status.value,
-        "overdue": o.is_pickup_overdue(current_app.config.get("PICKUP_GRACE_MINUTES", 60)),
+        "overdue": o.is_pickup_overdue(current_app.config.get("PICKUP_GRACE_MINUTES", 15)),
     } for o in orders])
 
 

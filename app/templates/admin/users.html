@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% block title %}Users & Staff{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <h2 class="fw-bold mb-1 text-dark">Users & Staff</h2>
+  <p class="text-muted mb-0 small">Every account in the database. Change roles (customer / staff / admin) or remove accounts. You cannot change or delete your own account.</p>
+</div>
+<div class="card shadow-sm border-0"><div class="card-body p-4">
+<div class="table-responsive"><table class="table align-middle mb-0">
+<thead class="table-light"><tr><th>Name</th><th>Email</th><th>Role</th><th class="text-end">Actions</th></tr></thead>
+<tbody>
+{% for u in users %}
+<tr>
+  <td class="fw-bold text-dark">{{ u.name }}</td>
+  <td class="text-secondary">{{ u.email }}</td>
+  <td><span class="badge bg-dark">{{ u.role }}</span></td>
+  <td class="text-end">
+    <form method="post" action="{{ url_for('admin.set_role', user_id=u.id) }}" class="d-inline">{{ csrf() }}
+      <select name="role" class="form-select form-select-sm d-inline-block" style="width:auto">
+        {% for r in ('customer','staff','admin') %}<option value="{{ r }}" {{ 'selected' if u.role==r }}>{{ r }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-sm btn-outline-primary fw-semibold">Set role</button>
+    </form>
+    <form method="post" action="{{ url_for('admin.delete_user', user_id=u.id) }}" class="d-inline" onsubmit="return confirm('Delete {{ u.email }}?')">{{ csrf() }}
+      <button class="btn btn-sm btn-outline-danger fw-semibold">Delete</button>
+    </form>
+  </td>
+</tr>
+{% else %}<tr><td colspan="4" class="text-center text-muted py-4">No users found.</td></tr>{% endfor %}
+</tbody></table></div>
+</div></div>
+{% endblock %}

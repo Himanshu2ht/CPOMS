@@ -15,6 +15,17 @@
 
     {% set seq = ['PAID','PREPARING','READY','COLLECTED'] %}
     {% if order.status.value in seq or order.status.value in ('PENDING_PAYMENT',) %}
+      {% if order.slot and order.status.value in ('PAID','PREPARING','READY') %}
+      <div class="alert alert-info border-0 shadow-sm d-flex justify-content-between align-items-center flex-wrap gap-2" role="timer">
+        <span>⏱️ Slot starts <strong>{{ order.slot.start_time.strftime('%I:%M %p') }}</strong> ·
+        kitchen marks <strong>READY after the slot starts</strong>.</span>
+        <span class="badge bg-dark fs-6" data-countdown-to="{{ order.slot.start_time.isoformat() }}"
+          {% if order.status.value == 'READY' %}data-grace-minutes="{{ grace_minutes }}"{% endif %}>…</span>
+      </div>
+      {% if order.status.value == 'READY' %}
+      <div class="form-text mb-2">Pickup within {{ grace_minutes }} min of slot start, or the order auto-marks NO_SHOW (no refund).</div>
+      {% endif %}
+      {% endif %}
       <div class="timeline my-4">
         {% for s in seq %}
           <div class="step {{ 'done' if seq.index(s) <= seq.index(order.status.value) and order.status.value in seq }}" data-step="{{ s }}">{{ s.title() }}</div>

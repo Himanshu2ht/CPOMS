@@ -99,7 +99,9 @@ def detail(order_id):
     if order is None or order.user_id != current_user.id:
         abort(404)
     cancel_window = current_app.config.get("CANCEL_WINDOW_MINUTES", 5)
-    return render_template("orders/detail.html", order=order, cancel_window=cancel_window)
+    grace = current_app.config.get("PICKUP_GRACE_MINUTES", 15)
+    return render_template("orders/detail.html", order=order, cancel_window=cancel_window,
+                           grace_minutes=grace)
 
 
 @bp.get("/orders/<int:order_id>/status")
@@ -111,6 +113,8 @@ def status_json(order_id):
         abort(404)
     return jsonify(id=order.id, status=order.status.value,
                    token=order.token, total=float(order.total),
+                   slot_start=order.slot.start_time.isoformat() if order.slot else None,
+                   grace_minutes=current_app.config.get("PICKUP_GRACE_MINUTES", 15),
                    can_cancel=order.can_cancel(current_app.config.get("CANCEL_WINDOW_MINUTES", 5)))
 
 

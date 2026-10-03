@@ -1,5 +1,6 @@
 """Application factory."""
 import logging
+import time
 
 from flask import Flask, jsonify, render_template
 
@@ -79,6 +80,27 @@ def create_app(config_class=Config):
             return jsonify(ok=True, backend=app.config.get("DB_BACKEND", "unknown"))
         except Exception as exc:  # noqa: BLE001
             return jsonify(ok=False, error=str(exc)[:200]), 500
+
+    @app.before_request
+    def auto_housekeeping():
+        """Automatically expire unpaid orders and sweep no-shows (throttled).
+
+        Unpaid orders older than PAYMENT_TIMEOUT_MINUTES are failed and their
+        slots freed; READY orders past slot+PICKUP_GRACE_MINUTES become NO_SHOW.
+        Runs at most once every 45s so normal requests stay cheap.
+        """
+        now = time.monotonic()
+        if now - getattr(app, "_last_sweep", 0) < 45:
+            return
+        app._last_sweep = now
+        try:
+            from app.services import order_service, payment_service
+
+            payment_service.expire_stale_orders(
+                app.config.get("PAYMENT_TIMEOUT_MINUTES", 10))
+            order_service.sweep_no_shows()
+        except Exception:  # noqa: BLE001 - housekeeping must never break requests
+            db.session.rollback()
 
     @app.context_processor
     def inject_csrf():

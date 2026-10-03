@@ -67,12 +67,100 @@ def menu():
 @bp.post("/menu/<int:item_id>/update")
 @role_required("admin", "staff")
 def update_item(item_id):
+    """Full edit: staff typically touch stock/availability; admin can rename/reprice too."""
+    from flask_login import current_user
+
     item = db.session.get(MenuItem, item_id)
     if item:
+        if current_user.role == "admin":
+            name = request.form.get("name", "").strip()
+            category = request.form.get("category", "").strip()
+            try:
+                price = Decimal(request.form.get("price", str(item.price)))
+                if price <= 0:
+                    raise ValueError
+                item.price = price
+            except (InvalidOperation, ValueError):
+                flash("Price must be a positive number.", "danger")
+                return redirect(url_for("admin.menu"))
+            if name:
+                item.name = name
+            if category:
+                item.category = category
         item.stock = max(0, request.form.get("stock", item.stock, type=int))
         item.is_available = request.form.get("is_available") == "on"
         db.session.commit()
+        flash("Menu item updated.", "success")
     return redirect(url_for("admin.menu"))
+
+
+@bp.post("/menu/<int:item_id>/delete")
+@role_required("admin")
+def delete_item(item_id):
+    item = db.session.get(MenuItem, item_id)
+    if item:
+        db.session.delete(item)
+        db.session.commit()
+        flash(f"Deleted {item.name}.", "info")
+    return redirect(url_for("admin.menu"))
+
+
+@bp.get("/users")
+@role_required("admin")
+def users():
+    """See every DB user: customers, staff, admins. Change roles / remove accounts."""
+    all_users = User.query.order_by(User.role.desc(), User.name).all()
+    return render_template("admin/users.html", users=all_users)
+
+
+@bp.post("/users/<int:user_id>/role")
+@role_required("admin")
+def set_role(user_id):
+    from flask_login import current_user
+
+    user = db.session.get(User, user_id)
+    role = request.form.get("role", "")
+    if user is None or role not in ("customer", "staff", "admin"):
+        flash("Invalid user or role.", "danger")
+    elif user.id == current_user.id:
+        flash("You cannot change your own role.", "danger")
+    else:
+        user.role = role
+        db.session.commit()
+        flash(f"{user.email} is now {role}.", "success")
+    return redirect(url_for("admin.users"))
+
+
+@bp.post("/users/<int:user_id>/delete")
+@role_required("admin")
+def delete_user(user_id):
+    from flask_login import current_user
+
+    user = db.session.get(User, user_id)
+    if user is None:
+        flash("User not found.", "danger")
+    elif user.id == current_user.id:
+        flash("You cannot delete your own account.", "danger")
+    elif Order.query.filter_by(user_id=user.id).first():
+        flash("Cannot delete: user has orders on record.", "danger")
+    else:
+        db.session.delete(user)
+        db.session.commit()
+        flash(f"Deleted {user.email}.", "info")
+    return redirect(url_for("admin.users"))
+
+
+@bp.get("/orders")
+@role_required("admin")
+def all_orders():
+    """Admin sees ALL orders (every user), newest first."""
+    status = request.args.get("status", "")
+    q = Order.query.order_by(Order.created_at.desc()).limit(100)
+    orders = q.all()
+    if status:
+        orders = [o for o in orders if o.status.value == status]
+    return render_template("admin/orders.html", orders=orders, status=status,
+                           statuses=[s.value for s in OrderStatus])
 
 
 @bp.route("/slots", methods=["GET", "POST"])
@@ -92,6 +180,21 @@ def slots():
             flash("Time slot created.", "success")
         return redirect(url_for("admin.slots"))
     return render_template("admin/slots.html", slots=TimeSlot.query.order_by(TimeSlot.start_time.desc()).limit(30).all())
+
+
+@bp.post("/slots/<int:slot_id>/delete")
+@role_required("admin")
+def delete_slot(slot_id):
+    slot = db.session.get(TimeSlot, slot_id)
+    if slot is None:
+        flash("Slot not found.", "danger")
+    elif Order.query.filter_by(slot_id=slot.id).first():
+        flash("Cannot delete: orders are booked in this slot.", "danger")
+    else:
+        db.session.delete(slot)
+        db.session.commit()
+        flash("Slot deleted.", "info")
+    return redirect(url_for("admin.slots"))
 
 
 @bp.get("/reports")

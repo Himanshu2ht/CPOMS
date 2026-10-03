@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% block title %}All Orders{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+  <div><h2 class="fw-bold mb-1 text-dark">All Orders</h2>
+  <p class="text-muted mb-0 small">Every order in the database, newest first. Unpaid orders auto-expire; stale READY orders become NO_SHOW.</p></div>
+  <form method="get" class="d-flex gap-2">{{ csrf() }}
+    <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="">All statuses</option>
+      {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if status==s }}>{{ s }}</option>{% endfor %}
+    </select>
+  </form>
+</div>
+<div class="card shadow-sm border-0"><div class="card-body p-4">
+<div class="table-responsive"><table class="table align-middle mb-0">
+<thead class="table-light"><tr><th>#</th><th>Customer</th><th>Slot</th><th>Total</th><th>Status</th><th>Placed</th></tr></thead>
+<tbody>
+{% for o in orders %}
+<tr><td class="fw-bold">{{ o.id }}</td><td>{{ o.user.name }}<div class="small text-muted">{{ o.user.email }}</div></td>
+<td class="small">{{ o.slot.start_time.strftime('%d %b, %I:%M %p') if o.slot }}</td>
+<td class="fw-semibold">&#8377;{{ '%.2f'|format(o.total) }}</td>
+<td><span class="badge status-{{ o.status.value }} px-2 py-1">{{ o.status.value }}</span></td>
+<td class="small text-muted">{{ o.created_at.strftime('%d %b %I:%M %p') if o.created_at }}</td></tr>
+{% else %}<tr><td colspan="6" class="text-center text-muted py-4">No orders yet.</td></tr>{% endfor %}
+</tbody></table></div>
+</div></div>
+{% endblock %}
