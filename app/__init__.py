@@ -55,8 +55,11 @@ def create_app(config_class=Config):
 
     # Resolve DB (MySQL preferred, SQLite fallback) before first use.
     app.config["SQLALCHEMY_DATABASE_URI"] = _resolve_db_uri(app)
+    _uri = app.config["SQLALCHEMY_DATABASE_URI"]
     app.config["DB_BACKEND"] = (
-        "mysql" if app.config["SQLALCHEMY_DATABASE_URI"].startswith("mysql") else "sqlite"
+        "mysql" if _uri.startswith("mysql")
+        else "postgres" if "postgres" in _uri.split("://")[0]
+        else "sqlite"
     )
 
     from .models import User
