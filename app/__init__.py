@@ -102,6 +102,7 @@ def create_app(config_class=Config):
             payment_service.expire_stale_orders(
                 app.config.get("PAYMENT_TIMEOUT_MINUTES", 10))
             order_service.sweep_no_shows()
+            order_service.rollover_slots()  # keep daily slots date-agnostic
         except Exception:  # noqa: BLE001 - housekeeping must never break requests
             db.session.rollback()
 

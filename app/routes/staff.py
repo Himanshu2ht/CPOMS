@@ -51,11 +51,15 @@ def queue():
 @bp.get("/queue-data")
 @role_required("staff", "admin")
 def queue_data():
-    """Real-time polling endpoint for the kitchen display (JSON, no reload)."""
+    """Real-time polling endpoint for the kitchen display (JSON, no reload).
+
+    Slot times are naive UTC in the DB — the trailing Z makes browsers parse
+    them as UTC so countdowns are correct in any timezone.
+    """
     orders = _queue_orders()
     return jsonify([{
         "id": o.id, "token": o.token, "customer": o.user.name,
-        "slot": o.slot.start_time.isoformat() if o.slot else None,
+        "slot": o.slot.start_time.isoformat() + "Z" if o.slot else None,
         "items": [f"{l.quantity}x {l.item.name}" for l in o.items],
         "status": o.status.value,
         "overdue": o.is_pickup_overdue(current_app.config.get("PICKUP_GRACE_MINUTES", 15)),

@@ -3,7 +3,7 @@ from datetime import timedelta
 
 from app import create_app
 from app.extensions import db
-from app.models import MenuItem, TimeSlot, User
+from app.models import Category, MenuItem, TimeSlot, User
 from app.utils.timeutil import utcnow
 
 app = create_app()
@@ -21,6 +21,8 @@ with app.app_context():
                 ("Masala Chai", "Beverages", 15, 100), ("Cold Coffee", "Beverages", 40, 60)]
         for n, c, p, s in menu:
             db.session.add(MenuItem(name=n, category=c, price=p, stock=s))
+        for c in {c for _, c, _, _ in menu}:
+            db.session.add(Category(name=c))
         base = utcnow().replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
         for i in range(6):
             db.session.add(TimeSlot(start_time=base + timedelta(minutes=15 * i), capacity=20))

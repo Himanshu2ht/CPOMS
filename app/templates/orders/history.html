@@ -24,7 +24,7 @@
         {% for o in orders %}
           <tr>
             <td class="fw-bold text-dark">#{{ o.id }}</td>
-            <td class="fw-medium text-secondary">{{ o.slot.start_time.strftime('%d %b, %I:%M %p') }}</td>
+            <td class="fw-medium text-secondary">{{ o.slot.start_time.strftime('%I:%M %p') }}</td>
             <td class="fw-bold text-dark">&#8377;{{ '%.2f'|format(o.total) }}</td>
             <td><span class="badge status-{{ o.status.value }} px-3 py-1">{{ o.status.value.replace('_',' ') }}</span></td>
             <td class="text-end">

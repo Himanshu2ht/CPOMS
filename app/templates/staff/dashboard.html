@@ -73,7 +73,7 @@
               <tr>
                 <td class="fw-bold text-dark">{{ o.token or ('#%d'|format(o.id)) }}</td>
                 <td class="fw-medium">{{ o.user.name }}
-                  {% if o.slot %}<div><span class="badge bg-light text-dark border" data-countdown-to="{{ o.slot.start_time.isoformat() }}">…</span></div>{% endif %}</td>
+                  {% if o.slot %}<div><span class="badge bg-light text-dark border" data-countdown-to="{{ o.slot.start_time.isoformat() }}Z">…</span></div>{% endif %}</td>
                 <td class="small text-secondary">
                   {% for l in o.items %}
                     <span class="fw-semibold">{{ l.quantity }}&times;</span> {{ l.item.name }}{% if not loop.last %}, {% endif %}
@@ -116,7 +116,7 @@
         <h5 class="fw-bold mb-3">Verify Pickup Token</h5>
         <form method="post" action="{{ url_for('staff.verify_token') }}" class="d-flex gap-2">
           {{ csrf() }}
-          <input name="token" class="form-control fw-semibold" placeholder="Token e.g. T0012" required>
+          <input name="token" data-uppercase autocapitalize="characters" style="text-transform:uppercase" class="form-control fw-semibold" placeholder="Token e.g. T0012" required>
           <button class="btn btn-dark fw-semibold text-nowrap">Hand Over</button>
         </form>
       </div>
@@ -155,4 +155,4 @@
   </div>
 </div>
 {% endblock %}
-{% block scripts %}<script>pollQueueJSON();</script>{% endblock %}
+{% block scripts %}<script>const QUEUE_CSRF = "{{ csrf_token() }}"; pollQueueJSON();</script>{% endblock %}

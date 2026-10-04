@@ -140,3 +140,31 @@ def sweep_no_shows(grace_minutes=None):
         order.status = OrderStatus.NO_SHOW
     db.session.commit()
     return len(stale)
+
+
+def rollover_slots():
+    """Keep daily slots date-agnostic: past slots with no live orders roll forward.
+
+    Slots repeat every day at the same time, so a slot whose time passed today
+    (and has no PENDING/PAID/PREPARING/READY orders attached) is pushed forward
+    day-by-day until future, with its booking counter reset for the fresh day.
+    Returns number of slots rolled.
+    """
+    now = utcnow()
+    live = (OrderStatus.PENDING_PAYMENT, OrderStatus.PAID,
+            OrderStatus.PREPARING, OrderStatus.READY)
+    rolled = 0
+    for slot in TimeSlot.query.all():
+        if slot.start_time >= now:
+            continue
+        busy = Order.query.filter(Order.slot_id == slot.id,
+                                  Order.status.in_(live)).first()
+        if busy:
+            continue
+        while slot.start_time < now:
+            slot.start_time += timedelta(days=1)
+        slot.booked = 0
+        rolled += 1
+    if rolled:
+        db.session.commit()
+    return rolled

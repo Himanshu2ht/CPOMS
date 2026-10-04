@@ -113,7 +113,7 @@ def status_json(order_id):
         abort(404)
     return jsonify(id=order.id, status=order.status.value,
                    token=order.token, total=float(order.total),
-                   slot_start=order.slot.start_time.isoformat() if order.slot else None,
+                   slot_start=(order.slot.start_time.isoformat() + "Z") if order.slot else None,
                    grace_minutes=current_app.config.get("PICKUP_GRACE_MINUTES", 15),
                    can_cancel=order.can_cancel(current_app.config.get("CANCEL_WINDOW_MINUTES", 5)))
 

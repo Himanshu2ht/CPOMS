@@ -5,9 +5,9 @@
   <p class="text-muted mb-0 small">Every account in the database, grouped by role. Change roles or remove accounts. You cannot change or delete your own account.</p>
 </div>
 {% for role, title, blurb, badge in (
-  ('admin', '🛡️ Admins', 'Full access: dashboards, menu, slots, reports, user management.', 'bg-danger'),
-  ('staff', '🍳 Staff', 'Kitchen queue, token handover, stock management.', 'bg-primary'),
-  ('customer', '🎓 Customers', 'Browse menu, order, pay, pick up.', 'bg-success')) %}
+  ('admin', 'Admins', 'Full access: dashboards, menu, slots, reports, user management.', 'bg-danger'),
+  ('staff', 'Staff', 'Kitchen queue, token handover, stock management.', 'bg-primary'),
+  ('customer', 'Customers', 'Browse menu, order, pay, pick up.', 'bg-success')) %}
 {% set members = users|selectattr('role', 'equalto', role)|list %}
 <div class="card shadow-sm border-0 mb-4"><div class="card-body p-4">
   <div class="d-flex justify-content-between align-items-center mb-1">

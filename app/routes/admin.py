@@ -5,7 +5,7 @@ from flask import Blueprint, flash, jsonify, redirect, render_template, request,
 from sqlalchemy import func
 
 from app.extensions import db
-from app.models import MenuItem, Order, OrderStatus, TimeSlot, User
+from app.models import Category, MenuItem, Order, OrderStatus, TimeSlot, User, all_category_names
 from app.services import order_service, payment_service, report_service
 from app.utils.decorators import role_required
 from app.utils.timeutil import utcnow
@@ -51,21 +51,43 @@ def menu():
             price = Decimal(request.form.get("price", "0"))
             stock = int(request.form.get("stock", "0"))
             name = request.form.get("name", "").strip()
+            category = request.form.get("category", "Snacks").strip() or "Snacks"
             if not name or price <= 0 or stock < 0:
                 raise ValueError
         except (InvalidOperation, ValueError):
             flash("Enter a name, a positive price and a valid stock.", "danger")
         else:
-            db.session.add(MenuItem(name=name, price=price, stock=stock,
-                                    category=request.form.get("category", "Snacks").strip() or "Snacks"))
+            db.session.add(MenuItem(name=name, price=price, stock=stock, category=category))
+            _ensure_category(category)
             db.session.commit()
             flash("Menu item added.", "success")
         return redirect(url_for("admin.menu"))
-    cats = [r[0] for r in db.session.query(MenuItem.category)
-            .distinct().order_by(MenuItem.category).all()] or ["Snacks"]
     return render_template("admin/menu.html",
                            items=MenuItem.query.order_by(MenuItem.category, MenuItem.name).all(),
-                           categories=cats)
+                           categories=all_category_names())
+
+
+def _ensure_category(name):
+    name = (name or "").strip()
+    if name and not Category.query.filter_by(name=name).first():
+        db.session.add(Category(name=name))
+    return name
+
+
+@bp.post("/menu/categories/add")
+@role_required("admin")
+def add_category():
+    """Add a category on its own — no item required."""
+    name = request.form.get("category", "").strip()
+    if not name:
+        flash("Type a category name first.", "danger")
+    elif Category.query.filter_by(name=name).first():
+        flash(f"Category '{name}' already exists.", "info")
+    else:
+        db.session.add(Category(name=name))
+        db.session.commit()
+        flash(f"Category '{name}' added.", "success")
+    return redirect(url_for("admin.menu"))
 
 
 @bp.post("/menu/<int:item_id>/update")
@@ -91,6 +113,7 @@ def update_item(item_id):
                 item.name = name
             if category:
                 item.category = category
+                _ensure_category(category)
         item.stock = max(0, request.form.get("stock", item.stock, type=int))
         item.is_available = request.form.get("is_available") == "on"
         db.session.commit()
@@ -170,18 +193,22 @@ def all_orders():
 @bp.route("/slots", methods=["GET", "POST"])
 @role_required("admin")
 def slots():
+    """Daily slots: time-only (no date) — the same times repeat every day."""
     if request.method == "POST":
         try:
-            start = datetime.strptime(request.form["start_time"], "%Y-%m-%dT%H:%M")
+            t = datetime.strptime(request.form["start_time"], "%H:%M").time()
             capacity = int(request.form["capacity"])
             if capacity < 1:
                 raise ValueError
         except (KeyError, ValueError):
-            flash("Enter a valid start time and capacity.", "danger")
+            flash("Enter a valid time and capacity.", "danger")
         else:
+            start = utcnow().replace(hour=t.hour, minute=t.minute, second=0, microsecond=0)
+            if start <= utcnow():
+                start += timedelta(days=1)
             db.session.add(TimeSlot(start_time=start, capacity=capacity))
             db.session.commit()
-            flash("Time slot created.", "success")
+            flash(f"Daily slot at {t.strftime('%I:%M %p')} created.", "success")
         return redirect(url_for("admin.slots"))
     return render_template("admin/slots.html", slots=TimeSlot.query.order_by(TimeSlot.start_time.desc()).limit(30).all())
 

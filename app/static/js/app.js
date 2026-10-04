@@ -41,8 +41,18 @@ document.addEventListener("DOMContentLoaded", () => {
       sel.value = v;
     }
   });
-  // "Slot starts in 12:34" -> "Slot started — mark READY / pickup now".
+  // Token / short-code fields: force UPPER CASE as the user types.
+  document.addEventListener("input", (e) => {
+    if (e.target.matches("[data-uppercase]")) {
+      const pos = e.target.selectionStart;
+      e.target.value = e.target.value.toUpperCase();
+      try { e.target.setSelectionRange(pos, pos); } catch (_) {}
+    }
+  });
+  // "Slot starts in 12:34" -> "Slot started ...".
   // With data-grace-minutes (READY orders) it counts the pickup window instead.
+  // Countdowns for slots older than 60 min hide themselves (stale).
+  const HIDE_AFTER_MS = 60 * 60000;
   const fmt = (ms) => {
     const s = Math.max(0, Math.floor(ms / 1000));
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
@@ -52,13 +62,15 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll("[data-countdown-to]").forEach(el => {
       const slot = new Date(el.dataset.countdownTo).getTime();
       if (isNaN(slot)) return;
-      const graceMin = parseFloat(el.dataset.graceMinutes || "0");
       const now = Date.now();
+      if (now - slot > HIDE_AFTER_MS) { el.style.display = "none"; return; }
+      el.style.display = "";
+      const graceMin = parseFloat(el.dataset.graceMinutes || "0");
       if (graceMin > 0 && now >= slot) {
         const left = slot + graceMin * 60000 - now;
         el.textContent = left > 0 ? `pickup window: ${fmt(left)} left` : "pickup window over";
       } else if (now >= slot) {
-        el.textContent = `slot started ${fmt(now - slot)} ago — mark READY`;
+        el.textContent = `slot started ${fmt(now - slot)} ago`;
       } else {
         el.textContent = `slot starts in ${fmt(slot - now)}`;
       }
@@ -95,10 +107,28 @@ function pollOrderStatus(orderId) {
 }
 
 // --- staff kitchen: poll /staff/queue-data every 10s, update counts + rows ---
+// Action buttons are re-rendered too, so they never disappear while idle.
+// QUEUE_CSRF (set by the template) supplies the CSRF token for the forms.
+function queueActionButtons(o) {
+  const csrf = (typeof QUEUE_CSRF !== "undefined" && QUEUE_CSRF)
+    ? `<input type="hidden" name="csrf_token" value="${QUEUE_CSRF}">` : "";
+  let h = '<div class="d-flex gap-1 justify-content-end">';
+  if (o.status === "PAID") {
+    h += `<form method="post" action="/staff/orders/${o.id}/advance" class="d-inline">${csrf}<button class="btn btn-sm btn-primary fw-semibold">Mark PREPARING</button></form>`;
+  } else if (o.status === "PREPARING") {
+    h += `<form method="post" action="/staff/orders/${o.id}/advance" class="d-inline">${csrf}<button class="btn btn-sm btn-primary fw-semibold">Mark READY</button></form>`;
+  }
+  if (o.status === "READY") {
+    h += `<form method="post" action="/staff/orders/${o.id}/no-show" class="d-inline">${csrf}<button class="btn btn-sm btn-outline-danger fw-semibold">No-Show</button></form>`;
+  }
+  return h + "</div>";
+}
 function pollQueueJSON() {
   const wrap = document.getElementById("queue-live");
   const updated = document.getElementById("queue-updated");
   const url = "/staff/queue-data";
+  // Dashboard table has 5 columns (no Slot column), queue table has 6.
+  const hasSlotCol = wrap ? wrap.querySelectorAll("thead th").length >= 6 : true;
   const tick = async () => {
     try {
       const r = await fetch(url, {headers: {"Accept": "application/json"}});
@@ -111,18 +141,21 @@ function pollQueueJSON() {
       });
       if (wrap && wrap.querySelector("tbody")) {
         const tb = wrap.querySelector("tbody");
+        const cols = hasSlotCol ? 6 : 5;
         tb.innerHTML = rows.length ? rows.map(o => {
           const when = o.slot ? new Date(o.slot) : null;
           const slotTxt = when ? when.toLocaleString([], {hour: "numeric", minute: "2-digit"}) : "";
           const cd = o.slot ? `<div><span class="badge bg-light text-dark border" data-countdown-to="${o.slot}">…</span></div>` : "";
+          const cust = `<td class="fw-medium">${o.customer}${o.overdue ? ' <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1">overdue</span>' : ""}${hasSlotCol ? "" : cd}</td>`;
+          const slotCell = hasSlotCol ? `<td class="small text-secondary">${slotTxt}${cd}</td>` : "";
           return `<tr>
           <td class="fw-bold text-dark">${o.token || "#" + o.id}</td>
-          <td class="fw-medium">${o.customer}${o.overdue ? ' <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1">overdue</span>' : ""}</td>
-          <td class="small text-secondary">${slotTxt}${cd}</td>
+          ${cust}
+          ${slotCell}
           <td class="small">${o.items.join(", ")}</td>
           <td><span class="badge status-${o.status} px-2 py-1">${o.status}</span></td>
-          <td class="text-end"></td>
-        </tr>`;}).join("") : `<tr><td colspan="6" class="text-center text-muted py-4">No active orders.</td></tr>`;
+          <td class="text-end">${queueActionButtons(o)}</td>
+        </tr>`;}).join("") : `<tr><td colspan="${cols}" class="text-center text-muted py-4">No active orders.</td></tr>`;
       }
       if (updated) updated.textContent = `live · ${rows.length} active · ${new Date().toLocaleTimeString()}`;
     } catch (e) { /* ignore transient errors */ }

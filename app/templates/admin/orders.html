@@ -16,7 +16,7 @@
 <tbody>
 {% for o in orders %}
 <tr><td class="fw-bold">{{ o.id }}</td><td>{{ o.user.name }}<div class="small text-muted">{{ o.user.email }}</div></td>
-<td class="small">{{ o.slot.start_time.strftime('%d %b, %I:%M %p') if o.slot }}</td>
+<td class="small">{{ o.slot.start_time.strftime('%I:%M %p') if o.slot }}</td>
 <td class="fw-semibold">&#8377;{{ '%.2f'|format(o.total) }}</td>
 <td><span class="badge status-{{ o.status.value }} px-2 py-1">{{ o.status.value }}</span></td>
 <td class="small text-muted">{{ o.created_at.strftime('%d %b %I:%M %p') if o.created_at }}</td></tr>

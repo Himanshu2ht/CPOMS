@@ -39,6 +39,17 @@
         <button class="btn btn-primary w-100 fw-semibold">Add Item</button>
       </div>
     </form>
+    <hr class="my-4">
+    <form method="post" action="{{ url_for('admin.add_category') }}" class="row g-2 align-items-end">{{ csrf() }}
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold text-secondary">Add a category without adding an item</label>
+        <input name="category" class="form-control" placeholder="e.g. Desserts" required>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-outline-primary w-100 fw-semibold">Add Category</button>
+      </div>
+      <div class="col-md-6"><div class="form-text">New categories appear in every category dropdown immediately.</div></div>
+    </form>
   </div>
 </div>
 
@@ -71,14 +82,10 @@
             </td>
             <td>
               {% if current_user.role == 'admin' %}
-                <div class="input-group input-group-sm">
-                  <select name="category" form="edit-{{ i.id }}" class="form-select" data-category-select>
-                    {% for c in categories %}<option value="{{ c }}" {{ 'selected' if c == i.category }}>{{ c }}</option>{% endfor %}
-                    {% if i.category not in categories %}<option value="{{ i.category }}" selected>{{ i.category }}</option>{% endif %}
-                  </select>
-                  <button type="button" class="btn btn-outline-secondary fw-bold" data-add-category title="Add a new category">+</button>
-                </div>
-                <input class="form-control form-control-sm mt-1 d-none" data-new-category placeholder="New category…">
+                <select name="category" form="edit-{{ i.id }}" class="form-select form-select-sm" data-category-select>
+                  {% for c in categories %}<option value="{{ c }}" {{ 'selected' if c == i.category }}>{{ c }}</option>{% endfor %}
+                  {% if i.category not in categories %}<option value="{{ i.category }}" selected>{{ i.category }}</option>{% endif %}
+                </select>
               {% else %}
                 <span class="badge bg-light text-dark border px-2 py-1">{{ i.category }}</span>
               {% endif %}

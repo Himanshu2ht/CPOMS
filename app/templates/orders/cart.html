@@ -54,7 +54,7 @@
         <select name="slot_id" class="form-select form-select-lg fs-6" required>
           <option value="">Choose a slot...</option>
           {% for s in slots %}
-            <option value="{{ s.id }}" {{ 'disabled' if s.remaining == 0 }}>{{ s.start_time.strftime('%d %b, %I:%M %p') }} &mdash; {{ s.remaining }} spots remaining</option>
+            <option value="{{ s.id }}" {{ 'disabled' if s.remaining == 0 }}>{{ s.start_time.strftime('%I:%M %p') }} daily &mdash; {{ s.remaining }} spots remaining</option>
           {% endfor %}
         </select>
       </div>

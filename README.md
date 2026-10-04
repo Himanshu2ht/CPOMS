@@ -38,6 +38,11 @@ docker compose up --build   # web on :5000, mysql on :3306, health at /health/db
 | `PICKUP_GRACE_MINUTES` | 15 | READY past slot+15 min → `NO_SHOW` (auto-sweep on every request + manual button, no refund) |
 | `PAYMENT_TIMEOUT_MINUTES` | 10 | unpaid orders auto-expire after this (background sweep on every request, throttled) |
 
+Slots are **daily recurring (time-only, no dates)** — past slots with no live orders roll
+forward automatically and booking counters reset. Countdowns are UTC-correct, hide after
+60 min stale, and kitchen action buttons survive live polling. Categories live in their own
+table: add one standalone from Menu & Stock without creating an item.
+
 ## Real-time updates
 No page reloads needed: order page polls `GET /orders/<id>/status` every 8s
 (timeline + badge update live); kitchen polls `GET /staff/queue-data` every 10s
