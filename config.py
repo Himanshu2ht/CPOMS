@@ -6,12 +6,22 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-class Config:
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-change-me")
-    SQLALCHEMY_DATABASE_URI = os.getenv(
+def _database_uri():
+    uri = os.getenv(
         "DATABASE_URL",
         "mysql+pymysql://canteen_user:password@localhost:3306/canteen_db",
     )
+    # Render/Supabase give "postgres://..." but SQLAlchemy needs the driver prefix.
+    if uri.startswith("postgres://"):
+        uri = uri.replace("postgres://", "postgresql+psycopg2://", 1)
+    elif uri.startswith("postgresql://") and "+" not in uri.split("://")[0]:
+        uri = uri.replace("postgresql://", "postgresql+psycopg2://", 1)
+    return uri
+
+
+class Config:
+    SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-change-me")
+    SQLALCHEMY_DATABASE_URI = _database_uri()
     # Fallback so `python run.py` still works when MySQL is down (dev convenience).
     # Set DB_FALLBACK_SQLITE=0 to fail loudly instead.
     DB_FALLBACK_SQLITE = os.getenv("DB_FALLBACK_SQLITE", "1") == "1"
