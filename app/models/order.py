@@ -44,7 +44,7 @@ class Order(db.Model):
             return self.age_minutes() <= window_minutes
         return False
 
-    def is_pickup_overdue(self, grace_minutes=60):
+    def is_pickup_overdue(self, grace_minutes=15):
         """True when a READY order passed its slot + grace (no-pickup case)."""
         if self.status != OrderStatus.READY or not self.slot:
             return False

@@ -17,6 +17,32 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   }
+  // live countdowns: any [data-countdown-to="<ISO>"] ticks every second.
+  // "Slot starts in 12:34" -> "Slot started — mark READY / pickup now".
+  // With data-grace-minutes (READY orders) it counts the pickup window instead.
+  const fmt = (ms) => {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    return h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m ${String(sec).padStart(2, "0")}s` : `${sec}s`;
+  };
+  const refreshCountdowns = () => {
+    document.querySelectorAll("[data-countdown-to]").forEach(el => {
+      const slot = new Date(el.dataset.countdownTo).getTime();
+      if (isNaN(slot)) return;
+      const graceMin = parseFloat(el.dataset.graceMinutes || "0");
+      const now = Date.now();
+      if (graceMin > 0 && now >= slot) {
+        const left = slot + graceMin * 60000 - now;
+        el.textContent = left > 0 ? `pickup window: ${fmt(left)} left` : "pickup window over";
+      } else if (now >= slot) {
+        el.textContent = `slot started ${fmt(now - slot)} ago — mark READY`;
+      } else {
+        el.textContent = `slot starts in ${fmt(slot - now)}`;
+      }
+    });
+  };
+  refreshCountdowns();
+  setInterval(refreshCountdowns, 1000);
 });
 
 // --- order tracking page: poll /orders/<id>/status every 8s ---
@@ -62,14 +88,18 @@ function pollQueueJSON() {
       });
       if (wrap && wrap.querySelector("tbody")) {
         const tb = wrap.querySelector("tbody");
-        tb.innerHTML = rows.length ? rows.map(o => `<tr>
+        tb.innerHTML = rows.length ? rows.map(o => {
+          const when = o.slot ? new Date(o.slot) : null;
+          const slotTxt = when ? when.toLocaleString([], {hour: "numeric", minute: "2-digit"}) : "";
+          const cd = o.slot ? `<div><span class="badge bg-light text-dark border" data-countdown-to="${o.slot}">…</span></div>` : "";
+          return `<tr>
           <td class="fw-bold text-dark">${o.token || "#" + o.id}</td>
           <td class="fw-medium">${o.customer}${o.overdue ? ' <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1">overdue</span>' : ""}</td>
-          <td class="small text-secondary">${o.slot ? new Date(o.slot).toLocaleString([], {hour: "numeric", minute: "2-digit"}) : ""}</td>
+          <td class="small text-secondary">${slotTxt}${cd}</td>
           <td class="small">${o.items.join(", ")}</td>
           <td><span class="badge status-${o.status} px-2 py-1">${o.status}</span></td>
           <td class="text-end"></td>
-        </tr>`).join("") : `<tr><td colspan="6" class="text-center text-muted py-4">No active orders.</td></tr>`;
+        </tr>`;}).join("") : `<tr><td colspan="6" class="text-center text-muted py-4">No active orders.</td></tr>`;
       }
       if (updated) updated.textContent = `live · ${rows.length} active · ${new Date().toLocaleTimeString()}`;
     } catch (e) { /* ignore transient errors */ }

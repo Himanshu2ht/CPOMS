@@ -72,7 +72,8 @@
             {% for o in orders %}
               <tr>
                 <td class="fw-bold text-dark">{{ o.token or ('#%d'|format(o.id)) }}</td>
-                <td class="fw-medium">{{ o.user.name }}</td>
+                <td class="fw-medium">{{ o.user.name }}
+                  {% if o.slot %}<div><span class="badge bg-light text-dark border" data-countdown-to="{{ o.slot.start_time.isoformat() }}">…</span></div>{% endif %}</td>
                 <td class="small text-secondary">
                   {% for l in o.items %}
                     <span class="fw-semibold">{{ l.quantity }}&times;</span> {{ l.item.name }}{% if not loop.last %}, {% endif %}

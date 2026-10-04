@@ -56,18 +56,29 @@
         <tbody>
         {% for i in items %}
           <tr>
-            <td class="fw-bold text-dark">{{ i.name }}</td>
-            <td><span class="badge bg-light text-dark border px-2 py-1">{{ i.category }}</span></td>
-            <td class="fw-semibold text-dark">&#8377;{{ '%.2f'|format(i.price) }}</td>
-            <td colspan="3">
-              <form method="post" action="{{ url_for('admin.update_item', item_id=i.id) }}" class="d-flex align-items-center justify-content-end gap-3 mb-0">{{ csrf() }}
-                <input name="stock" type="number" min="0" value="{{ i.stock }}" class="form-control form-control-sm text-center fw-semibold" style="width: 90px;">
+            <td colspan="6" class="p-0 border-0">
+              <form method="post" action="{{ url_for('admin.update_item', item_id=i.id) }}" class="d-flex align-items-center gap-2 flex-wrap p-3 mb-0">{{ csrf() }}
+                {% if current_user.role == 'admin' %}
+                  <input name="name" value="{{ i.name }}" class="form-control form-control-sm fw-semibold" style="max-width:200px" required title="Item name">
+                  <input name="category" value="{{ i.category }}" class="form-control form-control-sm" style="max-width:130px" title="Category">
+                  <div class="input-group input-group-sm" style="max-width:130px"><span class="input-group-text">&#8377;</span><input name="price" type="number" step="0.01" min="0.01" value="{{ '%.2f'|format(i.price) }}" class="form-control text-center fw-semibold" title="Price"></div>
+                {% else %}
+                  <span class="fw-bold text-dark" style="min-width:160px">{{ i.name }}</span>
+                  <span class="badge bg-light text-dark border px-2 py-1">{{ i.category }}</span>
+                  <span class="fw-semibold text-dark">&#8377;{{ '%.2f'|format(i.price) }}</span>
+                {% endif %}
+                <input name="stock" type="number" min="0" value="{{ i.stock }}" class="form-control form-control-sm text-center fw-semibold" style="width: 90px;" title="Stock count">
                 <div class="form-check form-switch mb-0">
                   <input type="checkbox" name="is_available" class="form-check-input" id="avail-{{ i.id }}" {{ 'checked' if i.is_available }}>
                   <label class="form-check-label small fw-semibold text-secondary" for="avail-{{ i.id }}">Available</label>
                 </div>
                 <button class="btn btn-sm btn-outline-primary fw-semibold">Save</button>
               </form>
+              {% if current_user.role == 'admin' %}
+              <form method="post" action="{{ url_for('admin.delete_item', item_id=i.id) }}" class="px-3 pb-2 mb-0" onsubmit="return confirm('Delete {{ i.name }}?')">{{ csrf() }}
+                <button class="btn btn-sm btn-link text-danger text-decoration-none p-0 small">Delete item</button>
+              </form>
+              {% endif %}
             </td>
           </tr>
         {% else %}

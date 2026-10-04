@@ -35,8 +35,8 @@ docker compose up --build   # web on :5000, mysql on :3306, health at /health/db
 |------|---------|---------|
 | `PREP_TIME_MINUTES` | 25 | slots < 25 min away are hidden & rejected (`SLOT_TOO_SOON`) |
 | `CANCEL_WINDOW_MINUTES` | 5 | PAID orders refundable only within 5 min; PENDING always free |
-| `PICKUP_GRACE_MINUTES` | 60 | READY past slot+60 min → `NO_SHOW` (auto-sweep + manual button, no refund) |
-| `PAYMENT_TIMEOUT_MINUTES` | 10 | unpaid orders expire after this |
+| `PICKUP_GRACE_MINUTES` | 15 | READY past slot+15 min → `NO_SHOW` (auto-sweep on every request + manual button, no refund) |
+| `PAYMENT_TIMEOUT_MINUTES` | 10 | unpaid orders auto-expire after this (background sweep on every request, throttled) |
 
 ## Real-time updates
 No page reloads needed: order page polls `GET /orders/<id>/status` every 8s

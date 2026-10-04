@@ -27,7 +27,7 @@ class Config:
     # --- business rules (all mkdocs-visible, all tunable via env) ---
     PREP_TIME_MINUTES = int(os.getenv("PREP_TIME_MINUTES", "25"))      # kitchen needs 25 min
     CANCEL_WINDOW_MINUTES = int(os.getenv("CANCEL_WINDOW_MINUTES", "5"))  # cancel/refund within 5 min
-    PICKUP_GRACE_MINUTES = int(os.getenv("PICKUP_GRACE_MINUTES", "60"))  # READY -> NO_SHOW after slot+60min
+    PICKUP_GRACE_MINUTES = int(os.getenv("PICKUP_GRACE_MINUTES", "15"))  # READY -> NO_SHOW after slot+15min
     LOGIN_RATELIMIT_ATTEMPTS = int(os.getenv("LOGIN_RATELIMIT_ATTEMPTS", "5"))
     LOGIN_RATELIMIT_WINDOW_SECONDS = int(os.getenv("LOGIN_RATELIMIT_WINDOW_SECONDS", "300"))
 
