@@ -16,6 +16,11 @@ def _database_uri():
         uri = uri.replace("postgres://", "postgresql+psycopg2://", 1)
     elif uri.startswith("postgresql://") and "+" not in uri.split("://")[0]:
         uri = uri.replace("postgresql://", "postgresql+psycopg2://", 1)
+    # Supabase pooler URIs carry "?pgbouncer=true" which psycopg2 rejects as an
+    # invalid DSN option — drop it (a literal ? in a password is %-encoded, so
+    # a raw ? always starts the query string).
+    if uri.startswith("postgresql+psycopg2://") and "?" in uri:
+        uri = uri.split("?", 1)[0]
     return uri
 
 
