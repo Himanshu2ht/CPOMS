@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block title %}Secure Payment{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-6"><div class="card shadow-sm"><div class="card-body p-4 text-center">
+<span class="badge bg-warning text-dark mb-2">SANDBOX GATEWAY</span>
+<h4>Pay &#8377;{{ '%.2f'|format(payment.amount) }}</h4>
+<p class="text-muted">Order #{{ payment.order_id }} &middot; UPI / Card / Net banking</p>
+{% if payment.status.value == 'CREATED' %}
+<form method="post" action="{{ url_for('payments.complete', ref=payment.gateway_ref) }}">{{ csrf() }}
+  <button name="outcome" value="success" class="btn btn-success me-2">Pay now</button>
+  <button name="outcome" value="failure" class="btn btn-outline-danger">Simulate failure</button>
+</form>
+{% else %}<div class="alert alert-info">Payment already {{ payment.status.value.lower() }}.</div>{% endif %}
+</div></div></div></div>
+{% endblock %}

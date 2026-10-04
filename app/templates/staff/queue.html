@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block title %}Kitchen Queue{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3"><h3 class="mb-0">Kitchen Queue</h3>
+<form method="post" action="{{ url_for('staff.verify_token') }}" class="d-flex gap-2">{{ csrf() }}
+<input name="token" class="form-control" placeholder="Pickup token e.g. T0012" required>
+<button class="btn btn-dark">Hand over</button></form></div>
+<table class="table align-middle"><thead><tr><th>Token</th><th>Customer</th><th>Slot</th><th>Items</th><th>Status</th><th></th></tr></thead><tbody>
+{% for o in orders %}<tr><td class="fw-bold">{{ o.token }}</td><td>{{ o.user.name }}</td><td>{{ o.slot.start_time.strftime('%I:%M %p') }}</td>
+<td>{% for l in o.items %}{{ l.quantity }}&times; {{ l.item.name }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+<td><span class="badge status-{{ o.status.value }}">{{ o.status.value }}</span></td>
+<td class="text-end">{% if next_action.get(o.status) %}
+<form method="post" action="{{ url_for('staff.advance', order_id=o.id) }}">{{ csrf() }}<button class="btn btn-sm btn-primary">Mark {{ next_action[o.status].value }}</button></form>{% endif %}</td></tr>
+{% else %}<tr><td colspan="6" class="text-center text-muted">No active orders.</td></tr>{% endfor %}
+</tbody></table>
+<meta http-equiv="refresh" content="30">
+{% endblock %}

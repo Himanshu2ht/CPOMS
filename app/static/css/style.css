@@ -1,0 +1,11 @@
+:root { --navy:#1f3a5f; --teal:#0e7c7b; --orange:#f28c28; }
+body { background:#f5f7fa; }
+.brand-nav { background:linear-gradient(90deg,var(--navy),var(--teal)); }
+.section-title { color:var(--navy); border-left:4px solid var(--orange); padding-left:.6rem; }
+.price { color:var(--teal); font-weight:700; font-size:1.15rem; }
+.token-box { background:#fff6e8; border:2px dashed var(--orange); border-radius:12px; padding:.8rem 1.2rem; display:inline-block; }
+.token-box span { font-size:1.8rem; font-weight:800; color:var(--navy); margin-left:.6rem; letter-spacing:2px; }
+.badge[class*="status-"] { color:#fff; }
+.status-PENDING_PAYMENT { background:#f0ad4e; } .status-PAID { background:#0e7c7b; }
+.status-PREPARING { background:#2f6690; } .status-READY { background:#6a994e; }
+.status-COLLECTED { background:#1f3a5f; } .status-CANCELLED, .status-FAILED { background:#c0392b; }

@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% block title %}Manage Menu{% endblock %}
+{% block content %}
+<h3>Manage Menu</h3>
+<form method="post" class="row g-2 card card-body shadow-sm mb-4">{{ csrf() }}
+  <div class="col-md-3"><input name="name" class="form-control" placeholder="Item name" required></div>
+  <div class="col-md-2"><input name="category" class="form-control" placeholder="Category"></div>
+  <div class="col-md-2"><input name="price" type="number" step="0.01" min="0.01" class="form-control" placeholder="Price" required></div>
+  <div class="col-md-2"><input name="stock" type="number" min="0" class="form-control" placeholder="Stock" required></div>
+  <div class="col-md-3"><button class="btn btn-primary w-100">Add item</button></div>
+</form>
+<table class="table align-middle"><thead><tr><th>Item</th><th>Category</th><th>Price</th><th>Stock</th><th>Available</th><th></th></tr></thead><tbody>
+{% for i in items %}<tr>
+<td>{{ i.name }}</td><td>{{ i.category }}</td><td>&#8377;{{ '%.2f'|format(i.price) }}</td>
+<td colspan="3"><form method="post" action="{{ url_for('admin.update_item', item_id=i.id) }}" class="d-flex align-items-center gap-3">{{ csrf() }}
+<input name="stock" type="number" min="0" value="{{ i.stock }}" class="form-control form-control-sm" style="width:90px">
+<label class="form-check-label"><input type="checkbox" name="is_available" class="form-check-input me-1" {{ 'checked' if i.is_available }}>Available</label>
+<button class="btn btn-sm btn-outline-primary">Save</button></form></td></tr>{% endfor %}
+</tbody></table>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% block title %}Order #{{ order.id }}{% endblock %}
+{% block content %}
+<div class="card shadow-sm"><div class="card-body">
+<div class="d-flex justify-content-between"><h4>Order #{{ order.id }}</h4>
+<span class="badge fs-6 status-{{ order.status.value }}">{{ order.status.value.replace('_',' ') }}</span></div>
+<p class="text-muted">Pickup slot: {{ order.slot.start_time.strftime('%d %b %Y, %I:%M %p') }}</p>
+{% if order.token and order.status.value in ('PAID','PREPARING','READY') %}
+<div class="token-box my-3">Pickup token <span>{{ order.token }}</span></div>{% endif %}
+<table class="table"><thead><tr><th>Item</th><th>Qty</th><th class="text-end">Price</th></tr></thead><tbody>
+{% for l in order.items %}<tr><td>{{ l.item.name }}</td><td>{{ l.quantity }}</td><td class="text-end">&#8377;{{ '%.2f'|format(l.unit_price * l.quantity) }}</td></tr>{% endfor %}
+</tbody><tfoot><tr><th colspan="2">Total</th><th class="text-end">&#8377;{{ '%.2f'|format(order.total) }}</th></tr></tfoot></table>
+{% if order.status.value == 'PENDING_PAYMENT' and order.payment %}
+  <a class="btn btn-success" href="{{ url_for('payments.checkout', ref=order.payment.gateway_ref) }}">Complete payment</a>{% endif %}
+{% if order.status.value in ('PENDING_PAYMENT','PAID') %}
+  <form method="post" action="{{ url_for('orders.cancel', order_id=order.id) }}" class="d-inline">{{ csrf() }}
+  <button class="btn btn-outline-danger">Cancel{{ ' & refund' if order.status.value == 'PAID' }}</button></form>{% endif %}
+</div></div>
+{% endblock %}
