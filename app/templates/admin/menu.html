@@ -12,14 +12,20 @@
     <h5 class="fw-bold mb-0">Add New Menu Item</h5>
   </div>
   <div class="card-body p-4">
-    <form method="post" class="row g-3">{{ csrf() }}
+    <form method="post" class="row g-3" data-category-form>{{ csrf() }}
       <div class="col-md-3">
         <label class="form-label small fw-semibold text-secondary">Item Name</label>
         <input name="name" class="form-control" placeholder="e.g. Veg Cheese Grilled Sandwich" required>
       </div>
       <div class="col-md-3">
         <label class="form-label small fw-semibold text-secondary">Category</label>
-        <input name="category" class="form-control" placeholder="e.g. Snacks">
+        <div class="input-group">
+          <select name="category" class="form-select" data-category-select>
+            {% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+          </select>
+          <button type="button" class="btn btn-outline-secondary fw-bold" data-add-category title="Add a new category">+</button>
+        </div>
+        <input class="form-control mt-2 d-none" data-new-category placeholder="Type new category, then Add Item">
       </div>
       <div class="col-md-2">
         <label class="form-label small fw-semibold text-secondary">Price (&#8377;)</label>
@@ -45,38 +51,61 @@
       <table class="table align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th>Item Name</th>
-            <th>Category</th>
-            <th>Price</th>
-            <th>Stock Count</th>
+            <th style="min-width:170px">Item Name</th>
+            <th style="min-width:170px">Category</th>
+            <th>Price (&#8377;)</th>
+            <th>Stock</th>
             <th>Status</th>
-            <th class="text-end">Save Changes</th>
+            <th class="text-end">Actions</th>
           </tr>
         </thead>
         <tbody>
         {% for i in items %}
-          <tr>
-            <td colspan="6" class="p-0 border-0">
-              <form method="post" action="{{ url_for('admin.update_item', item_id=i.id) }}" class="d-flex align-items-center gap-2 flex-wrap p-3 mb-0">{{ csrf() }}
-                {% if current_user.role == 'admin' %}
-                  <input name="name" value="{{ i.name }}" class="form-control form-control-sm fw-semibold" style="max-width:200px" required title="Item name">
-                  <input name="category" value="{{ i.category }}" class="form-control form-control-sm" style="max-width:130px" title="Category">
-                  <div class="input-group input-group-sm" style="max-width:130px"><span class="input-group-text">&#8377;</span><input name="price" type="number" step="0.01" min="0.01" value="{{ '%.2f'|format(i.price) }}" class="form-control text-center fw-semibold" title="Price"></div>
-                {% else %}
-                  <span class="fw-bold text-dark" style="min-width:160px">{{ i.name }}</span>
-                  <span class="badge bg-light text-dark border px-2 py-1">{{ i.category }}</span>
-                  <span class="fw-semibold text-dark">&#8377;{{ '%.2f'|format(i.price) }}</span>
-                {% endif %}
-                <input name="stock" type="number" min="0" value="{{ i.stock }}" class="form-control form-control-sm text-center fw-semibold" style="width: 90px;" title="Stock count">
-                <div class="form-check form-switch mb-0">
-                  <input type="checkbox" name="is_available" class="form-check-input" id="avail-{{ i.id }}" {{ 'checked' if i.is_available }}>
-                  <label class="form-check-label small fw-semibold text-secondary" for="avail-{{ i.id }}">Available</label>
+          <tr data-category-form>
+            <td>
+              {% if current_user.role == 'admin' %}
+                <input name="name" form="edit-{{ i.id }}" value="{{ i.name }}" class="form-control form-control-sm fw-semibold" required>
+              {% else %}
+                <span class="fw-bold text-dark">{{ i.name }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if current_user.role == 'admin' %}
+                <div class="input-group input-group-sm">
+                  <select name="category" form="edit-{{ i.id }}" class="form-select" data-category-select>
+                    {% for c in categories %}<option value="{{ c }}" {{ 'selected' if c == i.category }}>{{ c }}</option>{% endfor %}
+                    {% if i.category not in categories %}<option value="{{ i.category }}" selected>{{ i.category }}</option>{% endif %}
+                  </select>
+                  <button type="button" class="btn btn-outline-secondary fw-bold" data-add-category title="Add a new category">+</button>
                 </div>
+                <input class="form-control form-control-sm mt-1 d-none" data-new-category placeholder="New category…">
+              {% else %}
+                <span class="badge bg-light text-dark border px-2 py-1">{{ i.category }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if current_user.role == 'admin' %}
+                <input name="price" form="edit-{{ i.id }}" type="number" step="0.01" min="0.01" value="{{ '%.2f'|format(i.price) }}" class="form-control form-control-sm text-center fw-semibold" style="width:90px">
+              {% else %}
+                <span class="fw-semibold text-dark">&#8377;{{ '%.2f'|format(i.price) }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <input name="stock" form="edit-{{ i.id }}" type="number" min="0" value="{{ i.stock }}" class="form-control form-control-sm text-center fw-semibold {{ 'border-danger' if i.stock <= 5 }}" style="width:80px" title="Units in stock">
+            </td>
+            <td>
+              <div class="form-check form-switch mb-0">
+                <input type="checkbox" name="is_available" form="edit-{{ i.id }}" class="form-check-input" id="avail-{{ i.id }}" {{ 'checked' if i.is_available }}>
+                <label class="form-check-label small fw-semibold {{ 'text-success' if i.is_available else 'text-danger' }}" for="avail-{{ i.id }}">{{ 'On' if i.is_available else 'Off' }}</label>
+              </div>
+            </td>
+            <td class="text-end text-nowrap">
+              <form id="edit-{{ i.id }}" method="post" action="{{ url_for('admin.update_item', item_id=i.id) }}" class="d-inline">{{ csrf() }}
                 <button class="btn btn-sm btn-outline-primary fw-semibold">Save</button>
               </form>
               {% if current_user.role == 'admin' %}
-              <form method="post" action="{{ url_for('admin.delete_item', item_id=i.id) }}" class="px-3 pb-2 mb-0" onsubmit="return confirm('Delete {{ i.name }}?')">{{ csrf() }}
-                <button class="btn btn-sm btn-link text-danger text-decoration-none p-0 small">Delete item</button>
+              <form method="post" action="{{ url_for('admin.delete_item', item_id=i.id) }}" class="d-inline" onsubmit="return confirm('Delete {{ i.name }}?')">{{ csrf() }}
+                <button class="btn btn-sm btn-outline-danger fw-semibold">Delete</button>
               </form>
               {% endif %}
             </td>

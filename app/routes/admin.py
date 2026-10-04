@@ -61,7 +61,11 @@ def menu():
             db.session.commit()
             flash("Menu item added.", "success")
         return redirect(url_for("admin.menu"))
-    return render_template("admin/menu.html", items=MenuItem.query.order_by(MenuItem.category, MenuItem.name).all())
+    cats = [r[0] for r in db.session.query(MenuItem.category)
+            .distinct().order_by(MenuItem.category).all()] or ["Snacks"]
+    return render_template("admin/menu.html",
+                           items=MenuItem.query.order_by(MenuItem.category, MenuItem.name).all(),
+                           categories=cats)
 
 
 @bp.post("/menu/<int:item_id>/update")
