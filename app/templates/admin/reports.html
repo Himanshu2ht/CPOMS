@@ -1,7 +1,8 @@
 {% extends "base.html" %}{% block title %}Reports{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center"><h3>Sales Reports</h3>
-<form method="post" action="{{ url_for('admin.expire_unpaid') }}">{{ csrf() }}<button class="btn btn-sm btn-outline-secondary">Expire unpaid orders</button></form></div>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2"><h3>Sales Reports</h3>
+<div class="d-flex gap-2"><form method="post" action="{{ url_for('admin.expire_unpaid') }}">{{ csrf() }}<button class="btn btn-sm btn-outline-secondary">Expire unpaid orders</button></form>
+<form method="post" action="{{ url_for('admin.sweep_no_shows') }}">{{ csrf() }}<button class="btn btn-sm btn-outline-danger">Sweep no-shows</button></form></div></div>
 <div class="row g-4 mt-1"><div class="col-md-7"><h6>Daily sales (paid orders)</h6>
 <table class="table"><thead><tr><th>Date</th><th>Orders</th><th class="text-end">Revenue</th></tr></thead><tbody>
 {% for r in sales %}<tr><td>{{ r.day }}</td><td>{{ r.orders }}</td><td class="text-end">&#8377;{{ '%.2f'|format(r.revenue) }}</td></tr>
@@ -9,4 +10,8 @@
 <div class="col-md-5"><h6>Top items</h6><ol class="list-group list-group-numbered">
 {% for t in top %}<li class="list-group-item d-flex justify-content-between"><span>{{ t.name }}</span><span class="badge bg-primary">{{ t.qty }}</span></li>
 {% else %}<li class="list-group-item text-muted">No data yet.</li>{% endfor %}</ol></div></div>
+<h6 class="mt-4">🗑️ No-show / waste log (READY but never picked up — no refund)</h6>
+<table class="table"><thead><tr><th>#</th><th>Customer</th><th>Slot</th><th>Total</th><th>When</th></tr></thead><tbody>
+{% for o in no_shows %}<tr><td>{{ o.id }}</td><td>{{ o.user.name }}</td><td>{{ o.slot.start_time.strftime('%d %b, %I:%M %p') if o.slot }}</td><td>&#8377;{{ '%.2f'|format(o.total) }}</td><td class="small">{{ o.created_at }}</td></tr>
+{% else %}<tr><td colspan="5" class="text-muted">No no-shows. 🎉</td></tr>{% endfor %}</tbody></table>
 {% endblock %}

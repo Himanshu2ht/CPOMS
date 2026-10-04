@@ -12,6 +12,7 @@ class OrderStatus(enum.Enum):
     COLLECTED = "COLLECTED"
     CANCELLED = "CANCELLED"
     FAILED = "FAILED"
+    NO_SHOW = "NO_SHOW"  # ready but never picked up (slot + grace period passed)
 
 
 class Order(db.Model):
@@ -28,6 +29,28 @@ class Order(db.Model):
     user = db.relationship("User", backref="orders")
     slot = db.relationship("TimeSlot")
     items = db.relationship("OrderItem", backref="order", cascade="all, delete-orphan")
+
+    # --- business-rule helpers (no schema change) ---
+    def age_minutes(self):
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        return (now - (self.created_at or now)).total_seconds() / 60.0
+
+    def can_cancel(self, window_minutes=5):
+        """5-minute cancel window: PENDING_PAYMENT always, PAID only within window."""
+        if self.status == OrderStatus.PENDING_PAYMENT:
+            return True
+        if self.status == OrderStatus.PAID:
+            return self.age_minutes() <= window_minutes
+        return False
+
+    def is_pickup_overdue(self, grace_minutes=60):
+        """True when a READY order passed its slot + grace (no-pickup case)."""
+        if self.status != OrderStatus.READY or not self.slot:
+            return False
+        from datetime import datetime, timedelta, timezone
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        return now > (self.slot.start_time + timedelta(minutes=grace_minutes))
 
 
 class OrderItem(db.Model):

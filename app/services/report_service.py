@@ -4,7 +4,7 @@ from app.extensions import db
 from app.models import MenuItem, Order, OrderItem, OrderStatus
 
 PAID_STATES = (OrderStatus.PAID, OrderStatus.PREPARING,
-               OrderStatus.READY, OrderStatus.COLLECTED)
+               OrderStatus.READY, OrderStatus.COLLECTED, OrderStatus.NO_SHOW)
 
 
 def daily_sales(limit=14):

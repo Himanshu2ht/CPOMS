@@ -1,10 +1,14 @@
 """Order placement, cancellation and status workflow."""
+from datetime import timedelta
 from decimal import Decimal
+
+from flask import current_app
 
 from app import gateway
 from app.extensions import db
 from app.models import (MenuItem, Order, OrderItem, OrderStatus, Payment,
                         PaymentStatus, TimeSlot)
+from app.utils.timeutil import utcnow
 
 from . import payment_service
 from .result import fail, ok
@@ -12,8 +16,29 @@ from .result import fail, ok
 ALLOWED_TRANSITIONS = {
     OrderStatus.PAID: {OrderStatus.PREPARING},
     OrderStatus.PREPARING: {OrderStatus.READY},
-    OrderStatus.READY: {OrderStatus.COLLECTED},
+    OrderStatus.READY: {OrderStatus.COLLECTED, OrderStatus.NO_SHOW},
 }
+
+
+def _prep_minutes():
+    try:
+        return int(current_app.config.get("PREP_TIME_MINUTES", 25))
+    except RuntimeError:  # outside app context (unit tests calling directly)
+        return 25
+
+
+def _cancel_window():
+    try:
+        return int(current_app.config.get("CANCEL_WINDOW_MINUTES", 5))
+    except RuntimeError:
+        return 5
+
+
+def _grace_minutes():
+    try:
+        return int(current_app.config.get("PICKUP_GRACE_MINUTES", 60))
+    except RuntimeError:
+        return 60
 
 
 def is_orderable(item, qty):
@@ -46,6 +71,9 @@ def place_order(user, cart, slot_id):
         return fail("INVALID_SLOT")
     if slot.booked >= slot.capacity:                          # P3
         return fail("SLOT_FULL")
+    # 25-min prep rule: kitchen needs lead time, so reject near-term slots.
+    if slot.start_time < utcnow() + timedelta(minutes=_prep_minutes()):
+        return fail("SLOT_TOO_SOON")
 
     total = Decimal("0.00")
     lines = []
@@ -81,7 +109,10 @@ def cancel_order(user, order_id):
         order.slot.booked = max(0, order.slot.booked - 1)
         db.session.commit()
         return ok(order_id=order.id)
-    if order.status == OrderStatus.PAID:                      # refundable window
+    # 5-minute cancel window for PAID orders (then kitchen has started).
+    if order.status == OrderStatus.PAID:
+        if not order.can_cancel(_cancel_window()):
+            return fail("CANCEL_WINDOW_OVER")
         return payment_service.refund(order)
     return fail("NOT_CANCELLABLE")
 
@@ -92,3 +123,20 @@ def advance_status(order, new_status):
     order.status = new_status
     db.session.commit()
     return ok(order_id=order.id, status=new_status.value)
+
+
+def sweep_no_shows(grace_minutes=None):
+    """Mark READY orders past slot+grace as NO_SHOW (the 'what if no pickup' answer).
+
+    Returns number of orders flipped. Staff/admin can also do it manually per order.
+    Food from NO_SHOW orders is logged for waste tracking (see admin dashboard).
+    """
+    grace = grace_minutes if grace_minutes is not None else _grace_minutes()
+    cutoff = utcnow() - timedelta(minutes=grace)
+    stale = (Order.query.join(TimeSlot, Order.slot_id == TimeSlot.id)
+             .filter(Order.status == OrderStatus.READY,
+                     TimeSlot.start_time < cutoff).all())
+    for order in stale:
+        order.status = OrderStatus.NO_SHOW
+    db.session.commit()
+    return len(stale)

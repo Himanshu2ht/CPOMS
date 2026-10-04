@@ -1,0 +1,32 @@
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: canteen_db
+      MYSQL_USER: canteen_user
+      MYSQL_PASSWORD: StrongPassword
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - canteen_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      DATABASE_URL: mysql+pymysql://canteen_user:StrongPassword@db:3306/canteen_db
+      SECRET_KEY: change-this-to-a-long-random-string
+      PAYMENT_WEBHOOK_SECRET: change-this-webhook-secret
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  canteen_mysql:

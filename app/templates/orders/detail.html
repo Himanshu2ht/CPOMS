@@ -1,18 +1,35 @@
 {% extends "base.html" %}{% block title %}Order #{{ order.id }}{% endblock %}
 {% block content %}
 <div class="card shadow-sm"><div class="card-body">
-<div class="d-flex justify-content-between"><h4>Order #{{ order.id }}</h4>
-<span class="badge fs-6 status-{{ order.status.value }}">{{ order.status.value.replace('_',' ') }}</span></div>
-<p class="text-muted">Pickup slot: {{ order.slot.start_time.strftime('%d %b %Y, %I:%M %p') }}</p>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2"><h4 class="mb-0">Order #{{ order.id }}</h4>
+<div class="d-flex gap-2 align-items-center"><span id="order-status-badge" class="badge fs-6 status-{{ order.status.value }}">{{ order.status.value.replace('_',' ') }}</span><small id="order-live-note" class="text-muted">live · auto-updates</small></div></div>
+<p class="text-muted mt-1">Pickup slot: {{ order.slot.start_time.strftime('%d %b %Y, %I:%M %p') }}</p>
+{% set seq = ['PAID','PREPARING','READY','COLLECTED'] %}
+{% if order.status.value in seq or order.status.value in ('PENDING_PAYMENT',) %}
+<div class="timeline">
+  {% for s in seq %}<div class="step {{ 'done' if seq.index(s) <= seq.index(order.status.value) and order.status.value in seq }}" data-step="{{ s }}">{{ s.title() }}</div>{% endfor %}
+</div>
+{% elif order.status.value == 'NO_SHOW' %}
+<div class="alert alert-secondary">⚠️ You missed this pickup (slot + grace period passed). It was logged as <strong>NO_SHOW</strong> — no refund, food goes to waste log. Please order only slots you can make.</div>
+{% endif %}
 {% if order.token and order.status.value in ('PAID','PREPARING','READY') %}
-<div class="token-box my-3">Pickup token <span>{{ order.token }}</span></div>{% endif %}
+<div class="token-box my-3">Pickup token <span>{{ order.token }}</span></div>
+<p class="small text-muted">Show this at the counter. ⏱️ Kitchen needs ~25 min; arrive in your slot window.</p>{% endif %}
 <table class="table"><thead><tr><th>Item</th><th>Qty</th><th class="text-end">Price</th></tr></thead><tbody>
 {% for l in order.items %}<tr><td>{{ l.item.name }}</td><td>{{ l.quantity }}</td><td class="text-end">&#8377;{{ '%.2f'|format(l.unit_price * l.quantity) }}</td></tr>{% endfor %}
 </tbody><tfoot><tr><th colspan="2">Total</th><th class="text-end">&#8377;{{ '%.2f'|format(order.total) }}</th></tr></tfoot></table>
 {% if order.status.value == 'PENDING_PAYMENT' and order.payment %}
   <a class="btn btn-success" href="{{ url_for('payments.checkout', ref=order.payment.gateway_ref) }}">Complete payment</a>{% endif %}
-{% if order.status.value in ('PENDING_PAYMENT','PAID') %}
+{% if order.status.value == 'PENDING_PAYMENT' %}
   <form method="post" action="{{ url_for('orders.cancel', order_id=order.id) }}" class="d-inline">{{ csrf() }}
-  <button class="btn btn-outline-danger">Cancel{{ ' & refund' if order.status.value == 'PAID' }}</button></form>{% endif %}
+  <button class="btn btn-outline-danger">Cancel (free)</button></form>
+{% elif order.status.value == 'PAID' and order.can_cancel(cancel_window) %}
+  <form method="post" action="{{ url_for('orders.cancel', order_id=order.id) }}" class="d-inline">{{ csrf() }}
+  <button class="btn btn-outline-danger">Cancel & refund ({{ cancel_window }}-min window)</button></form>
+  <div class="form-text">Free cancel/refund within {{ cancel_window }} min of ordering — then the kitchen starts.</div>
+{% elif order.status.value == 'PAID' %}
+  <div class="alert alert-warning mt-2 mb-0">{{ cancel_window }}-minute cancel window has passed — the kitchen is preparing your food.</div>
+{% endif %}
 </div></div>
 {% endblock %}
+{% block scripts %}<script>pollOrderStatus({{ order.id }});</script>{% endblock %}
