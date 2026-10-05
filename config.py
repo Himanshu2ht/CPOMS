@@ -30,6 +30,10 @@ class Config:
     # Fallback so `python run.py` still works when MySQL is down (dev convenience).
     # Set DB_FALLBACK_SQLITE=0 to fail loudly instead.
     DB_FALLBACK_SQLITE = os.getenv("DB_FALLBACK_SQLITE", "1") == "1"
+    # Fresh hosted DBs start empty: auto-create demo users/menu/slots on boot
+    # (only when the users table is empty; never deletes). Set AUTO_SEED=0 to
+    # disable and seed manually with `python seed.py`.
+    AUTO_SEED = os.getenv("AUTO_SEED", "1") == "1"
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 280}
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_COOKIE_HTTPONLY = True

@@ -124,6 +124,13 @@ def create_app(config_class=Config):
         return render_template("error.html", code=404, message="Page not found."), 404
 
     with app.app_context():
-        db.create_all()
+        db.create_all()  # tables are created automatically — never make them by hand
+        # Fresh hosted DBs (Render + Supabase) start empty: fill demo users/menu/
+        # slots automatically so admin/staff logins exist. Skipped in tests and
+        # when AUTO_SEED=0. Never touches a DB that already has users.
+        if app.config.get("AUTO_SEED", True) and not app.config.get("TESTING"):
+            from app.bootstrap import safe_ensure_demo_data
+
+            safe_ensure_demo_data()
 
     return app
